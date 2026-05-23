@@ -1,9 +1,9 @@
 export const config = {
-  runtime: 'edge', // Runs at the network edge—blazing fast, no cold starts, completely free
+  runtime: 'edge', 
 };
 
 export default async function handler(req) {
-  // 1. Handle Preflight CORS requests from your apps
+  // 1. Handle Preflight CORS requests
   if (req.method === 'OPTIONS') {
     return new Response('OK', {
       status: 200,
@@ -23,8 +23,6 @@ export default async function handler(req) {
   }
 
   try {
-    // 2. Extract your pool of keys from the environment variables
-    // We parse a single comma-separated string containing your 100 keys
     const rawKeys = process.env.GEMINI_KEYS_POOL || '';
     const keysPool = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
 
@@ -35,14 +33,13 @@ export default async function handler(req) {
       });
     }
 
-    // 3. Smart Rotation: Pull a random key from the 100 keys pool to distribute load evenly
+    // Smart Random Index Load Distribution across your 100 keys
     const randomIndex = Math.floor(Math.random() * keysPool.length);
     const selectedGeminiKey = keysPool[randomIndex];
 
-    // 4. Parse incoming payload from Hermes
     const body = await req.json();
 
-    // 5. Proxy the request directly to Google's OpenAI-compatible endpoint
+    // 2. Forward payload to Google's standard OpenAI-compatible layer
     const googleResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
       method: 'POST',
       headers: {
@@ -52,14 +49,17 @@ export default async function handler(req) {
       body: JSON.stringify(body),
     });
 
-    // 6. Return the raw streamed or standard response back to Hermes with standard CORS headers
+    // 3. Preserve Google's streaming headers perfectly so Hermes reads output data natively
+    const responseHeaders = new Headers();
+    responseHeaders.set('Access-Control-Allow-Origin', '*');
+    responseHeaders.set('Content-Type', googleResponse.headers.get('Content-Type') || 'application/json');
+    if (googleResponse.headers.get('Transfer-Encoding')) {
+      responseHeaders.set('Transfer-Encoding', googleResponse.headers.get('Transfer-Encoding'));
+    }
+
     return new Response(googleResponse.body, {
       status: googleResponse.status,
-      headers: {
-        'Content-Type': googleResponse.headers.get('Content-Type') || 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache',
-      },
+      headers: responseHeaders,
     });
 
   } catch (error) {
@@ -68,4 +68,4 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
-        }
+}
