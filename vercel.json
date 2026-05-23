@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "routes": [
+    {
+      "src": "/v1/chat/completions",
+      "dest": "/api/chat"
+    },
+    {
+      "src": "/api/chat",
+      "dest": "/api/chat"
+    }
+  ]
+}
