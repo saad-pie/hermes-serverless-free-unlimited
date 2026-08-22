@@ -3,7 +3,7 @@ export const config = {
 };
 
 export default async function handler(req) {
-  // 1. Handle Preflight CORS requests
+  // 1. Handle Preflight CORS
   if (req.method === 'OPTIONS') {
     return new Response('OK', {
       status: 200,
@@ -29,33 +29,40 @@ export default async function handler(req) {
     if (keysPool.length === 0) {
       return new Response(JSON.stringify({ error: 'API key pool is empty. Please set GEMINI_KEYS_POOL.' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       });
     }
 
-    // Smart Random Index Load Distribution across your 100 keys
-    const randomIndex = Math.floor(Math.random() * keysPool.length);
-    const selectedGeminiKey = keysPool[randomIndex];
+    const bodyText = await req.text(); // Parse as text to safely re-use body in retries
 
-    const body = await req.json();
+    // Retry mechanism (up to 3 key rotation attempts if rate-limited)
+    let googleResponse;
+    let attempts = 0;
+    const maxAttempts = Math.min(3, keysPool.length);
 
-    // 2. Forward payload to Google's standard OpenAI-compatible layer
-    const googleResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${selectedGeminiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
+    while (attempts < maxAttempts) {
+      attempts++;
+      const selectedKey = keysPool[Math.floor(Math.random() * keysPool.length)];
 
-    // 3. Preserve Google's streaming headers perfectly so Hermes reads output data natively
+      googleResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${selectedKey}`,
+        },
+        body: bodyText,
+      });
+
+      // If success or standard user error (not 429 rate limit or 403 quota), break loop
+      if (googleResponse.status !== 429 && googleResponse.status !== 403) {
+        break;
+      }
+    }
+
+    // 2. Build Response Headers
     const responseHeaders = new Headers();
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Content-Type', googleResponse.headers.get('Content-Type') || 'application/json');
-    if (googleResponse.headers.get('Transfer-Encoding')) {
-      responseHeaders.set('Transfer-Encoding', googleResponse.headers.get('Transfer-Encoding'));
-    }
 
     return new Response(googleResponse.body, {
       status: googleResponse.status,
