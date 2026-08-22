@@ -3,7 +3,6 @@ export const config = {
 };
 
 export default async function handler(req) {
-  // 1. Handle Preflight CORS
   if (req.method === 'OPTIONS') {
     return new Response('OK', {
       status: 200,
@@ -23,19 +22,33 @@ export default async function handler(req) {
   }
 
   try {
-    const rawKeys = process.env.GEMINI_KEYS_POOL || '';
-    const keysPool = rawKeys.split(',').map(k => k.trim()).filter(Boolean);
+    // Collect all environment variables matching Key_1, Key_2... or GEMINI_KEYS_POOL
+    const keysPool = [];
+
+    // 1. Check for individual Key_1 to Key_100 vars
+    for (let i = 1; i <= 100; i++) {
+      const key = process.env[`Key_${i}`];
+      if (key && key.trim()) {
+        keysPool.push(key.trim());
+      }
+    }
+
+    // 2. Fallback to GEMINI_KEYS_POOL if present
+    if (process.env.GEMINI_KEYS_POOL) {
+      const pooled = process.env.GEMINI_KEYS_POOL.split(',').map(k => k.trim()).filter(Boolean);
+      keysPool.push(...pooled);
+    }
 
     if (keysPool.length === 0) {
-      return new Response(JSON.stringify({ error: 'API key pool is empty. Please set GEMINI_KEYS_POOL.' }), {
+      return new Response(JSON.stringify({ error: 'No API keys found in environment variables.' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       });
     }
 
-    const bodyText = await req.text(); // Parse as text to safely re-use body in retries
+    const bodyText = await req.text();
 
-    // Retry mechanism (up to 3 key rotation attempts if rate-limited)
+    // Key Rotation Retry Logic
     let googleResponse;
     let attempts = 0;
     const maxAttempts = Math.min(3, keysPool.length);
@@ -53,13 +66,11 @@ export default async function handler(req) {
         body: bodyText,
       });
 
-      // If success or standard user error (not 429 rate limit or 403 quota), break loop
       if (googleResponse.status !== 429 && googleResponse.status !== 403) {
         break;
       }
     }
 
-    // 2. Build Response Headers
     const responseHeaders = new Headers();
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Content-Type', googleResponse.headers.get('Content-Type') || 'application/json');
@@ -75,4 +86,4 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
-}
+  }
