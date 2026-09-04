@@ -2,7 +2,7 @@ export const config = {
   runtime: 'edge',
 };
 
-// 1. Pre-initialize key pool once globally during cold start
+// Global key initialization on cold start
 const keysPool = [];
 for (let i = 1; i <= 100; i++) {
   const key = process.env[`Key_${i}`];
@@ -45,9 +45,7 @@ export default async function handler(req) {
     const bodyText = await req.text();
     let googleResponse = null;
     let attempts = 0;
-    const maxAttempts = Math.min(3, keysPool.length);
-
-    // Track tried indices to avoid picking the exact same dead key back-to-back
+    const maxAttempts = Math.min(5, keysPool.length);
     const triedIndices = new Set();
 
     while (attempts < maxAttempts) {
@@ -61,8 +59,9 @@ export default async function handler(req) {
       triedIndices.add(randomIndex);
       const selectedKey = keysPool[randomIndex];
 
+      // Increased timeout to 25s for non-streaming generation
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout per attempt
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       try {
         googleResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
@@ -76,11 +75,13 @@ export default async function handler(req) {
         });
         clearTimeout(timeoutId);
 
+        // If valid status (not rate limited or unauthorized), break out
         if (googleResponse.status !== 429 && googleResponse.status !== 403) {
           break;
         }
       } catch (err) {
         clearTimeout(timeoutId);
+        // If aborted or network failed, try next key in pool
         if (attempts >= maxAttempts) throw err;
       }
     }
