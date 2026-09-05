@@ -13,7 +13,7 @@ if (process.env.GEMINI_KEYS_POOL) {
   keysPool.push(...pooled);
 }
 
-// Baseline per-key quotas for Gemini models
+// Baseline per-key quotas
 const BASE_QUOTAS = {
   'gemini-3.5-flash-lite': { rpm: 30, rpd: 1500 },
   'gemini-3.5-flash': { rpm: 15, rpd: 1500 },
@@ -27,18 +27,9 @@ const BASE_QUOTAS = {
   'default': { rpm: 15, rpd: 1000 }
 };
 
-// Exclude multimodal/non-text generation models
 const NON_TEXT_KEYWORDS = [
-  'image',
-  'tts',
-  'transcribe',
-  'clip',
-  'robotics',
-  'computer-use',
-  'banana',
-  'deep-research',
-  'antigravity-preview',
-  'lyria'
+  'image', 'tts', 'transcribe', 'clip', 'robotics',
+  'computer-use', 'banana', 'deep-research', 'antigravity-preview', 'lyria'
 ];
 
 function getBaseQuota(id) {
@@ -76,12 +67,31 @@ export default async function handler(req) {
   }
 
   try {
-    const selectedKey = keysPool[Math.floor(Math.random() * activeKeyCount)];
+    let googleResponse;
+    let attempts = 0;
+    const maxAttempts = Math.min(5, activeKeyCount);
+    const triedIndices = new Set();
 
-    const googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${selectedKey}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // Retry loop across key pool if suspended/rate-limited keys are hit
+    while (attempts < maxAttempts) {
+      attempts++;
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * activeKeyCount);
+      } while (triedIndices.has(randomIndex) && triedIndices.size < activeKeyCount);
+
+      triedIndices.add(randomIndex);
+      const selectedKey = keysPool[randomIndex];
+
+      googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${selectedKey}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (googleResponse.ok) {
+        break;
+      }
+    }
 
     const data = await googleResponse.json();
 
