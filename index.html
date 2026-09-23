@@ -1,37 +1,341 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antigravity AI Provider</title>
+  <title>Antigravity AI Gateway — Unified LLM Router</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#f0fdf4', 500: '#22c55e', 600: '#16a34a', 950: '#052e16' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
-  <div class="max-w-xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
-    <div class="flex items-center space-x-3 mb-6">
-      <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
-      <h1 class="text-2xl font-bold tracking-tight">Antigravity AI Provider 🚀</h1>
-    </div>
-    
-    <p class="text-slate-400 text-sm mb-6">
-      Your custom multi-key load-balanced Gemini provider endpoint is live and operating at maximum velocity on the Vercel Edge.
-    </p>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-black flex flex-col">
 
-    <div class="space-y-4 bg-slate-950 p-4 rounded-xl border border-slate-800/80 mb-6 font-mono text-xs">
-      <div>
-        <span class="text-slate-500">Endpoint URL:</span>
-        <div class="text-emerald-400 select-all mt-1 bg-slate-900 p-2 rounded border border-slate-800">https://antigravity-seven-delta.vercel.app/v1/chat/completions</div>
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-900/30">
+          <i class="fa-solid fa-cube text-white text-sm"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">Antigravity Router</span>
+          <span class="hidden sm:inline-block ml-2 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">v2.5 Edge</span>
+        </div>
       </div>
-      <div>
-        <span class="text-slate-500">Models Route:</span>
-        <div class="text-cyan-400 select-all mt-1 bg-slate-900 p-2 rounded border border-slate-800">https://antigravity-seven-delta.vercel.app/api/models</div>
-      </div>
+      <nav class="flex items-center space-x-1 sm:space-x-3 text-sm">
+        <button onclick="switchTab('models')" id="tab-btn-models" class="px-3.5 py-2 rounded-lg font-medium transition bg-slate-800 text-emerald-400">
+          <i class="fa-solid fa-server mr-2"></i>Models Catalogue
+        </button>
+        <button onclick="switchTab('playground')" id="tab-btn-playground" class="px-3.5 py-2 rounded-lg font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <i class="fa-solid fa-terminal mr-2"></i>Playground
+        </button>
+        <button onclick="switchTab('docs')" id="tab-btn-docs" class="px-3.5 py-2 rounded-lg font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+          <i class="fa-solid fa-book mr-2"></i>API Docs
+        </button>
+      </nav>
     </div>
+  </header>
 
-    <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800 pt-4">
-      <span>Status: <strong class="text-emerald-400">Online & Active</strong></span>
-      <span>Powered by Gemini ⚡</span>
-    </div>
-  </div>
+  <!-- Main Content View -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+
+    <!-- MODELS CATALOGUE TAB -->
+    <section id="tab-models" class="space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight">Active Model Registry</h1>
+          <p class="text-slate-400 text-sm mt-1">OpenAI-compatible multi-key load balanced gateway across active high-tier Gemini credentials.</p>
+        </div>
+        <div class="flex items-center space-x-3 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+          <div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Active Key Pool</div>
+            <div id="stat-keys-count" class="text-sm font-bold text-emerald-400 font-mono">Loading pool...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search and Filters -->
+      <div class="flex items-center space-x-4">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-500 text-sm"></i>
+          <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models (e.g., flash, gemma)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition">
+        </div>
+      </div>
+
+      <!-- Models Grid -->
+      <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamic Cards Injected Here -->
+        <div class="col-span-full py-12 text-center text-slate-500 font-mono">Querying live model endpoints...</div>
+      </div>
+    </section>
+
+    <!-- PLAYGROUND TAB -->
+    <section id="tab-playground" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Controls Column -->
+        <div class="lg:col-span-1 bg-slate-900/80 border border-slate-800/80 p-5 rounded-2xl space-y-4 h-fit">
+          <h2 class="font-bold text-sm tracking-wide text-slate-300 uppercase">Playground Settings</h2>
+          
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Select Model</label>
+            <select id="pg-model-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Custom API Key (Optional)</label>
+            <input type="password" id="pg-api-key" placeholder="Leave blank for pool default" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">System Prompt</label>
+            <textarea id="pg-system" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">You are a helpful, expert AI assistant running on Antigravity Router.</textarea>
+          </div>
+
+          <button onclick="sendPlaygroundMessage()" id="pg-send-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg shadow-emerald-900/20 text-sm">
+            <i class="fa-solid fa-paper-plane mr-2"></i>Send Prompt
+          </button>
+        </div>
+
+        <!-- Chat Stream Box -->
+        <div class="lg:col-span-3 bg-slate-900/80 border border-slate-800/80 rounded-2xl flex flex-col h-[650px] shadow-xl overflow-hidden">
+          <div class="bg-slate-900/90 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+              <span class="text-sm font-semibold">Chat Execution Stream</span>
+            </div>
+            <button onclick="clearChat()" class="text-xs text-slate-400 hover:text-slate-200 transition"><i class="fa-solid fa-rotate-right mr-1"></i>Reset Chat</button>
+          </div>
+
+          <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4 font-sans text-sm">
+            <div class="text-center text-slate-600 my-auto py-20 font-mono text-xs">Select a model and test your proxy gateway prompts right here.</div>
+          </div>
+
+          <div class="p-4 bg-slate-950/50 border-t border-slate-800">
+            <div class="flex space-x-2">
+              <input type="text" id="pg-user-input" onkeydown="if(event.key==='Enter')sendPlaygroundMessage()" placeholder="Type your message..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500">
+              <button onclick="sendPlaygroundMessage()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 rounded-xl transition"><i class="fa-solid fa-arrow-up"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- API DOCS TAB -->
+    <section id="tab-docs" class="space-y-6 hidden max-w-4xl mx-auto">
+      <div class="bg-slate-900/80 border border-slate-800/80 p-8 rounded-2xl space-y-6 shadow-xl">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight">API Integration Guide</h1>
+          <p class="text-slate-400 text-sm mt-1">Use your gateway endpoint as a drop-in OpenAI replacement anywhere.</p>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-emerald-400 uppercase font-mono">1. Base Endpoint URL</h3>
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-xs text-emerald-300 select-all">
+            https://antigravity-seven-delta.vercel.app/v1
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-emerald-400 uppercase font-mono">2. cURL Example</h3>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto select-all"><code>curl https://antigravity-seven-delta.vercel.app/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ANY_KEY_OR_PLACEHOLDER" \
+  -d '{
+    "model": "gemini-2.5-flash",
+    "messages": [{"role": "user", "content": "Hello! Give me a quick system check."}]
+  }'</code></pre>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-emerald-400 uppercase font-mono">3. JavaScript / OpenAI SDK Client Setup</h3>
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto select-all"><code>import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: "any-placeholder-string",
+  baseURL: "https://antigravity-seven-delta.vercel.app/v1"
+});
+
+const response = await openai.chat.completions.create({
+  model: "gemini-2.5-flash",
+  messages: [{ role: "user", content: "Write a haiku about high speed routing." }],
+});
+
+console.log(response.choices[0].message.content);</code></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-900/30 py-6 mt-12 text-center text-xs text-slate-500 font-mono">
+    Antigravity AI Gateway • Multi-Key Load Balanced Engine • Edge Powered
+  </footer>
+
+  <!-- Application Script Logic -->
+  <script>
+    let globalModels = [];
+    let chatHistory = [];
+
+    function switchTab(tab) {
+      ['models', 'playground', 'docs'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${t}`).classList.remove('bg-slate-800', 'text-emerald-400');
+        document.getElementById(`tab-btn-${t}`).classList.add('text-slate-400');
+      });
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-btn-${tab}`).classList.add('bg-slate-800', 'text-emerald-400');
+      document.getElementById(`tab-btn-${tab}`).classList.remove('text-slate-400');
+    }
+
+    async function fetchModels() {
+      try {
+        const res = await fetch('/api/models');
+        const data = await res.json();
+        if (data && data.data) {
+          globalModels = data.data;
+          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 100}+ Keys Pooled`;
+          renderModels(globalModels);
+          populatePlaygroundDropdown(globalModels);
+        } else {
+          throw new Error('Invalid registry format');
+        }
+      } catch (e) {
+        document.getElementById('models-grid').innerHTML = `<div class="col-span-full py-12 text-center text-red-400 font-mono text-xs">Failed to fetch model registry: ${e.message}</div>`;
+        document.getElementById('stat-keys-count').innerText = 'Pool Active';
+      }
+    }
+
+    function renderModels(models) {
+      const grid = document.getElementById('models-grid');
+      if (models.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 font-mono text-xs">No models match your query criteria.</div>`;
+        return;
+      }
+      grid.innerHTML = models.map(m => `
+        <div class="bg-slate-900/90 border border-slate-800/80 p-5 rounded-2xl flex flex-col justify-between hover:border-emerald-500/50 transition group">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Active Engine</span>
+              <span class="text-[10px] text-slate-500 font-mono">OpenAI Compatible</span>
+            </div>
+            <h3 class="font-bold text-base text-slate-100 group-hover:text-emerald-400 transition font-mono mb-2">${m.id}</h3>
+          </div>
+          <div class="border-t border-slate-800/80 pt-3 mt-4 grid grid-cols-3 gap-2 text-center font-mono text-[10px]">
+            <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
+              <div class="text-slate-500">RPM</div>
+              <div class="text-slate-200 font-bold mt-0.5">${m.rpm}</div>
+            </div>
+            <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
+              <div class="text-slate-500">TPM</div>
+              <div class="text-slate-200 font-bold mt-0.5">${(m.tpm / 1000).toFixed(0)}k</div>
+            </div>
+            <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
+              <div class="text-slate-500">RPD</div>
+              <div class="text-slate-200 font-bold mt-0.5">${m.rpd}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterModels() {
+      const query = document.getElementById('model-search').value.toLowerCase();
+      const filtered = globalModels.filter(m => m.id.toLowerCase().includes(query));
+      renderModels(filtered);
+    }
+
+    function populatePlaygroundDropdown(models) {
+      const select = document.getElementById('pg-model-select');
+      select.innerHTML = models.map(m => `<option value="${m.id}">${m.id}</option>`).join('');
+    }
+
+    function clearChat() {
+      chatHistory = [];
+      document.getElementById('chat-messages').innerHTML = `<div class="text-center text-slate-600 my-auto py-20 font-mono text-xs">Chat session reset. Ready for new prompts.</div>`;
+    }
+
+    async function sendPlaygroundMessage() {
+      const inputEl = document.getElementById('pg-user-input');
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      const model = document.getElementById('pg-model-select').value;
+      const systemPrompt = document.getElementById('pg-system').value.trim();
+      const customKey = document.getElementById('pg-api-key').value.trim();
+
+      inputEl.value = '';
+      
+      if (chatHistory.length === 0) {
+        document.getElementById('chat-messages').innerHTML = '';
+      }
+
+      if (systemPrompt && chatHistory.length === 0) {
+        chatHistory.push({ role: "system", content: systemPrompt });
+      }
+
+      chatHistory.push({ role: "user", content: text });
+      appendMessageBubble('user', text);
+
+      const assistantMsgId = 'msg-' + Date.now();
+      appendMessageBubble('assistant', '<span class="animate-pulse text-slate-500">Routing across active key pools...</span>', assistantMsgId);
+
+      try {
+        const res = await fetch('/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${customKey || 'antigravity-pool-default'}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: chatHistory
+          })
+        });
+
+        const data = await res.json();
+        if (data.choices && data.choices[0]) {
+          const reply = data.choices[0].message.content;
+          chatHistory.push({ role: "assistant", content: reply });
+          document.getElementById(assistantMsgId).innerText = reply;
+        } else {
+          document.getElementById(assistantMsgId).innerHTML = `<span class="text-red-400 font-mono text-xs">Error: ${JSON.stringify(data)}</span>`;
+        }
+      } catch (err) {
+        document.getElementById(assistantMsgId).innerHTML = `<span class="text-red-400 font-mono text-xs">Network Routing Error: ${err.message}</span>`;
+      }
+    }
+
+    function appendMessageBubble(role, htmlContent, id = '') {
+      const container = document.getElementById('chat-messages');
+      const isUser = role === 'user';
+      const div = document.createElement('div');
+      div.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+      div.innerHTML = `
+        <div class="max-w-[85%] rounded-2xl px-4 py-3 text-sm ${isUser ? 'bg-emerald-600 text-slate-950 font-medium' : 'bg-slate-900 border border-slate-800 text-slate-100'}">
+          <div class="text-[10px] font-mono opacity-60 mb-1">${isUser ? 'You' : 'Model Output'}</div>
+          <div ${id ? `id="${id}"` : ''} class="whitespace-pre-wrap leading-relaxed">${htmlContent}</div>
+        </div>
+      `;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Initialize on load
+    fetchModels();
+  </script>
 </body>
 </html>
