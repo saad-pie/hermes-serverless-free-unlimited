@@ -155,7 +155,6 @@ export default async function handler(req) {
           const freeAihubmixModels = aihubmixData.data
             .filter(m => {
               const id = (m.id || '').toLowerCase();
-              // Filter strictly for free tier designation or explicit free naming markers if applicable
               const isFreeExplicit = id.includes('free') || m.is_free === true || id.includes('mini') || id.includes('flash');
               return isFreeExplicit && isTextModel(id);
             })
@@ -171,7 +170,6 @@ export default async function handler(req) {
         }
       }
     } catch (e) {
-      // Fallback standard free models list if live fetching fails
       if (rawAihubmixKeys.length > 0) {
         const fallbackAihubmix = ['gpt-4o-mini', 'claude-3-haiku-20240307'].map(id => ({
           id: id,
@@ -183,6 +181,71 @@ export default async function handler(req) {
         allFormattedModels.push(...fallbackAihubmix);
         totalWorkingKeys += rawAihubmixKeys.length;
       }
+    }
+
+    // 4. Fetch JankRouter Models (Keyless)
+    try {
+      const jankRes = await fetch('http://jankrouter.waifly.com/v1/models', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (jankRes.ok) {
+        const jankData = await jankRes.json();
+        if (jankData && jankData.data) {
+          const jankModels = jankData.data
+            .filter(m => isTextModel(m.id || ''))
+            .map(m => ({
+              id: m.id,
+              provider: 'jankrouter',
+              rpm: 30,
+              tpm: 100000,
+              rpd: 1000
+            }));
+          allFormattedModels.push(...jankModels);
+        }
+      }
+    } catch (e) {
+      // Fallback known JankRouter text models if offline
+      const fallbackJank = ['qwen3-guard-8b', 'qwen3.8-27b', 'qwen3.8-flash', 'nemotron-3.5-lightning-30b', 'north-mini-code', 'glm-4.6v-flash', 'glm-5.3-flash', 'gpt-5.6-luna', 'deepseek-v4-flash-0731', 'gemma-4-26b-a4b', 'moondream-3.1'].map(id => ({
+        id: id,
+        provider: 'jankrouter',
+        rpm: 30,
+        tpm: 100000,
+        rpd: 1000
+      }));
+      allFormattedModels.push(...fallbackJank);
+    }
+
+    // 5. Fetch FreeAIXYZ Models (Keyless)
+    try {
+      const freeaiRes = await fetch('https://freeaixyz4all.vercel.app/api/v1/models', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (freeaiRes.ok) {
+        const freeaiData = await freeaiRes.json();
+        const modelsList = freeaiData.data || freeaiData.models || freeaiData;
+        if (Array.isArray(modelsList)) {
+          const freeaiModels = modelsList
+            .filter(m => {
+              const modelId = typeof m === 'string' ? m : (m.id || '');
+              return isTextModel(modelId);
+            })
+            .map(m => {
+              const modelId = typeof m === 'string' ? m : m.id;
+              return {
+                id: modelId,
+                provider: 'freeaixyz',
+                rpm: 50,
+                tpm: 200000,
+                rpd: 2000
+              };
+            });
+          allFormattedModels.push(...freeaiModels);
+        }
+      }
+    } catch (e) {
+      // Fallback default placeholder if offline
     }
 
     if (allFormattedModels.length === 0) {
@@ -211,4 +274,4 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
-        }
+      }
