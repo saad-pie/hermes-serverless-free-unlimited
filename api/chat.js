@@ -44,20 +44,18 @@ export default async function handler(req) {
   }
 
   try {
-    // Clone request to read JSON payload for model detection
     const clonedReq = req.clone();
     const bodyJson = await clonedReq.json().catch(() => ({}));
     const modelName = (bodyJson.model || '').toLowerCase();
 
-    // Determine target provider: Unorouter for :free models or explicit unorouter keys
-    const isUnorouterModel = modelName.endsWith(':free') || modelName.includes('unorouter');
+    // Route to Unorouter if model contains ':free' or 'unorouter'
+    const isUnorouterModel = modelName.includes(':free') || modelName.includes('unorouter');
     
     let keysPool = isUnorouterModel ? unorouterKeysPool : geminiKeysPool;
     let targetUrl = isUnorouterModel 
       ? 'https://api.unorouter.com/v1/chat/completions' 
       : 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 
-    // Fallback if target pool is empty
     if (keysPool.length === 0) {
       keysPool = geminiKeysPool.length > 0 ? geminiKeysPool : unorouterKeysPool;
       targetUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
