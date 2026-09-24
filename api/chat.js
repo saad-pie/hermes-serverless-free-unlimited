@@ -27,6 +27,9 @@ for (let i = 106; i <= 111; i++) {
   if (key && key.trim()) aihubmixKeysPool.push(key.trim());
 }
 
+// 4. Initialize OSAII key (Key_112)
+const osaiiKey = process.env['Key_112'] ? process.env['Key_112'].trim() : '';
+
 const NON_TEXT_KEYWORDS = ['image', 'tts', 'transcribe', 'clip', 'robotics', 'audio', 'embedding', 'rerank', 'moderation', 'video', '3d', 'stt'];
 
 // JankRouter specific models mapping
@@ -36,6 +39,11 @@ const JANK_MODELS = [
   'nemotron', 'north-mini-code', 'north-mini', 'glm-4.6v-flash', 'glm-4.6v', 'glm-flash',
   'glm-5.3-flash', 'glm-5.3-fast', 'gpt-5.6-luna', 'deepseek-v4-flash-0731', 'deepseek-v4-flash',
   'gemma-4-26b-a4b', 'gemma-4-26b-a4b-it', 'gemma-4-26b', 'gemma-26b', 'diffusiongemma', 'moondream-3.1'
+];
+
+// OSAII specific models mapping
+const OSAII_MODELS = [
+  'fast', 'smart', 'mini', 'poolside/laguna-xs-2.1', 'poolside/laguna-s-2.1', 'microsoft/bitnet-b1.58-2b-4t'
 ];
 
 export default async function handler(req) {
@@ -74,6 +82,7 @@ export default async function handler(req) {
     let keysPool = [];
     let targetUrl = '';
     let isKeyless = false;
+    let explicitAuthKey = '';
 
     if (modelName.includes(':free') || modelName.includes('unorouter')) {
       keysPool = unorouterKeysPool;
@@ -81,17 +90,21 @@ export default async function handler(req) {
     } else if (JANK_MODELS.some(m => modelName.includes(m))) {
       targetUrl = 'http://jankrouter.waifly.com/v1/chat/completions';
       isKeyless = true;
+    } else if (OSAII_MODELS.some(m => modelName.includes(m)) || modelName.includes('poolside/') || modelName.includes('bitnet')) {
+      targetUrl = 'https://osaii.wyvernhub.net/api/v1/chat/completions';
+      if (osaiiKey) explicitAuthKey = osaiiKey;
+      // OSAII allows anonymous requests natively if no key is present
     } else if (modelName.includes('gpt-') || modelName.includes('claude-') || modelName.includes('aihubmix') || modelName.includes('deepseek')) {
       keysPool = aihubmixKeysPool;
       targetUrl = 'https://aihubmix.com/v1/chat/completions';
     } else {
-      // Default to FreeAIXYZ or Gemini based on availability
-      targetUrl = 'https://freeaixyz4all.vercel.app/api/v1/chat/completions';
-      isKeyless = true;
+      // Default to OSAII or FreeAIXYZ
+      targetUrl = 'https://osaii.wyvernhub.net/api/v1/chat/completions';
+      if (osaiiKey) explicitAuthKey = osaiiKey;
     }
 
     // Fallback pools if specific ones are empty
-    if (!isKeyless && keysPool.length === 0) {
+    if (!isKeyless && !explicitAuthKey && keysPool.length === 0) {
       if (geminiKeysPool.length > 0) {
         keysPool = geminiKeysPool;
         targetUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
@@ -102,7 +115,6 @@ export default async function handler(req) {
         keysPool = unorouterKeysPool;
         targetUrl = 'https://api.unorouter.com/v1/chat/completions';
       } else {
-        // Fallback to FreeAIXYZ keyless gateway if all pools are empty
         targetUrl = 'https://freeaixyz4all.vercel.app/api/v1/chat/completions';
         isKeyless = true;
       }
@@ -111,8 +123,8 @@ export default async function handler(req) {
     const bodyText = await req.text();
     let upstreamResponse = null;
 
-    if (isKeyless) {
-      // Keyless upstream request (JankRouter / FreeAIXYZ)
+    if (isKeyless || (!explicitAuthKey && keysPool.length === 0)) {
+      // Keyless upstream request
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 25000);
 
@@ -121,6 +133,26 @@ export default async function handler(req) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+          },
+          body: bodyText,
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    } else if (explicitAuthKey) {
+      // Single Bearer token request (e.g., OSAII with Key_112)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+      try {
+        upstreamResponse = await fetch(targetUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${explicitAuthKey}`,
           },
           body: bodyText,
           signal: controller.signal,
