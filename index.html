@@ -55,12 +55,12 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
         <div>
           <h1 class="text-2xl font-bold tracking-tight">Active Model Registry</h1>
-          <p class="text-slate-400 text-sm mt-1">OpenAI-compatible multi-key load balanced gateway across active high-tier Gemini credentials.</p>
+          <p class="text-slate-400 text-sm mt-1">Multi-provider unified gateway balancing across Gemini and Unorouter keys.</p>
         </div>
         <div class="flex items-center space-x-3 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800">
           <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
           <div>
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Active Key Pool</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Active Key Pools</div>
             <div id="stat-keys-count" class="text-sm font-bold text-emerald-400 font-mono">Loading pool...</div>
           </div>
         </div>
@@ -70,7 +70,7 @@
       <div class="flex items-center space-x-4">
         <div class="relative flex-1">
           <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-500 text-sm"></i>
-          <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models (e.g., flash, gemma)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition">
+          <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models (e.g., flash, glm, :free)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition">
         </div>
       </div>
 
@@ -207,7 +207,7 @@ console.log(response.choices[0].message.content);</code></pre>
         const data = await res.json();
         if (data && data.data) {
           globalModels = data.data;
-          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 100}+ Keys Pooled`;
+          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 106}+ Pooled Keys`;
           renderModels(globalModels);
           populatePlaygroundDropdown(globalModels);
         } else {
@@ -225,31 +225,37 @@ console.log(response.choices[0].message.content);</code></pre>
         grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 font-mono text-xs">No models match your query criteria.</div>`;
         return;
       }
-      grid.innerHTML = models.map(m => `
-        <div class="bg-slate-900/90 border border-slate-800/80 p-5 rounded-2xl flex flex-col justify-between hover:border-emerald-500/50 transition group">
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Active Engine</span>
-              <span class="text-[10px] text-slate-500 font-mono">OpenAI Compatible</span>
+      grid.innerHTML = models.map(m => {
+        const isUnorouter = m.provider === 'unorouter' || m.id.endsWith(':free');
+        const badgeColor = isUnorouter ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        const providerName = isUnorouter ? 'Unorouter :free' : 'Google Gemini';
+
+        return `
+          <div class="bg-slate-900/90 border border-slate-800/80 p-5 rounded-2xl flex flex-col justify-between hover:border-emerald-500/50 transition group">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-mono border px-2.5 py-1 rounded-lg ${badgeColor}">${providerName}</span>
+                <span class="text-[10px] text-slate-500 font-mono">OpenAI Compatible</span>
+              </div>
+              <h3 class="font-bold text-base text-slate-100 group-hover:text-emerald-400 transition font-mono mb-2">${m.id}</h3>
             </div>
-            <h3 class="font-bold text-base text-slate-100 group-hover:text-emerald-400 transition font-mono mb-2">${m.id}</h3>
+            <div class="border-t border-slate-800/80 pt-3 mt-4 grid grid-cols-3 gap-2 text-center font-mono text-[10px]">
+              <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
+                <div class="text-slate-500">RPM</div>
+                <div class="text-slate-200 font-bold mt-0.5">${m.rpm}</div>
+              </div>
+              <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
+                <div class="text-slate-500">TPM</div>
+                <div class="text-slate-200 font-bold mt-0.5">${(m.tpm / 1000).toFixed(0)}k</div>
+              </div>
+              <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
+                <div class="text-slate-500">RPD</div>
+                <div class="text-slate-200 font-bold mt-0.5">${m.rpd}</div>
+              </div>
+            </div>
           </div>
-          <div class="border-t border-slate-800/80 pt-3 mt-4 grid grid-cols-3 gap-2 text-center font-mono text-[10px]">
-            <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
-              <div class="text-slate-500">RPM</div>
-              <div class="text-slate-200 font-bold mt-0.5">${m.rpm}</div>
-            </div>
-            <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
-              <div class="text-slate-500">TPM</div>
-              <div class="text-slate-200 font-bold mt-0.5">${(m.tpm / 1000).toFixed(0)}k</div>
-            </div>
-            <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
-              <div class="text-slate-500">RPD</div>
-              <div class="text-slate-200 font-bold mt-0.5">${m.rpd}</div>
-            </div>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function filterModels() {
