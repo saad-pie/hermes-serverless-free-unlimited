@@ -30,7 +30,7 @@
         </div>
         <div>
           <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">Antigravity Router</span>
-          <span class="hidden sm:inline-block ml-2 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">v2.5 Edge</span>
+          <span class="hidden sm:inline-block ml-2 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">v3.0 Edge</span>
         </div>
       </div>
       <nav class="flex items-center space-x-1 sm:space-x-3 text-sm">
@@ -55,7 +55,7 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
         <div>
           <h1 class="text-2xl font-bold tracking-tight">Active Model Registry</h1>
-          <p class="text-slate-400 text-sm mt-1">Multi-provider unified gateway balancing across Gemini and Unorouter keys.</p>
+          <p class="text-slate-400 text-sm mt-1">Multi-provider unified gateway balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII pools.</p>
         </div>
         <div class="flex items-center space-x-3 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800">
           <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
@@ -70,13 +70,12 @@
       <div class="flex items-center space-x-4">
         <div class="relative flex-1">
           <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-500 text-sm"></i>
-          <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models (e.g., flash, glm, :free)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition">
+          <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models (e.g., flash, glm, poolside, qwen)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition">
         </div>
       </div>
 
       <!-- Models Grid -->
       <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Dynamic Cards Injected Here -->
         <div class="col-span-full py-12 text-center text-slate-500 font-mono">Querying live model endpoints...</div>
       </div>
     </section>
@@ -145,13 +144,13 @@
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-emerald-400 uppercase font-mono">1. Base Endpoint URL</h3>
           <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-xs text-emerald-300 select-all">
-            https://antigravity-seven-delta.vercel.app/v1
+            /v1
           </div>
         </div>
 
         <div class="space-y-4">
           <h3 class="text-sm font-bold text-emerald-400 uppercase font-mono">2. cURL Example</h3>
-          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto select-all"><code>curl https://antigravity-seven-delta.vercel.app/v1/chat/completions \
+          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto select-all"><code>curl /v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ANY_KEY_OR_PLACEHOLDER" \
   -d '{
@@ -166,7 +165,7 @@
 
 const openai = new OpenAI({
   apiKey: "any-placeholder-string",
-  baseURL: "https://antigravity-seven-delta.vercel.app/v1"
+  baseURL: "/v1"
 });
 
 const response = await openai.chat.completions.create({
@@ -207,7 +206,7 @@ console.log(response.choices[0].message.content);</code></pre>
         const data = await res.json();
         if (data && data.data) {
           globalModels = data.data;
-          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 106}+ Pooled Keys`;
+          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 112}+ Pooled & Keyless`;
           renderModels(globalModels);
           populatePlaygroundDropdown(globalModels);
         } else {
@@ -226,9 +225,26 @@ console.log(response.choices[0].message.content);</code></pre>
         return;
       }
       grid.innerHTML = models.map(m => {
-        const isUnorouter = m.provider === 'unorouter' || m.id.endsWith(':free');
-        const badgeColor = isUnorouter ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-        const providerName = isUnorouter ? 'Unorouter :free' : 'Google Gemini';
+        const prov = m.provider || 'google';
+        let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        let providerName = 'Google Gemini';
+
+        if (prov === 'unorouter') {
+          badgeColor = 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
+          providerName = 'Unorouter';
+        } else if (prov === 'aihubmix') {
+          badgeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+          providerName = 'AIHubMix';
+        } else if (prov === 'jankrouter') {
+          badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+          providerName = 'JankRouter (Keyless)';
+        } else if (prov === 'freeaixyz') {
+          badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+          providerName = 'FreeAIXYZ (Keyless)';
+        } else if (prov === 'osaii') {
+          badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+          providerName = 'OSAII Platform';
+        }
 
         return `
           <div class="bg-slate-900/90 border border-slate-800/80 p-5 rounded-2xl flex flex-col justify-between hover:border-emerald-500/50 transition group">
@@ -266,7 +282,7 @@ console.log(response.choices[0].message.content);</code></pre>
 
     function populatePlaygroundDropdown(models) {
       const select = document.getElementById('pg-model-select');
-      select.innerHTML = models.map(m => `<option value="${m.id}">${m.id}</option>`).join('');
+      select.innerHTML = models.map(m => `<option value="${m.id}">${m.id} (${m.provider || 'general'})</option>`).join('');
     }
 
     function clearChat() {
@@ -297,7 +313,7 @@ console.log(response.choices[0].message.content);</code></pre>
       appendMessageBubble('user', text);
 
       const assistantMsgId = 'msg-' + Date.now();
-      appendMessageBubble('assistant', '<span class="animate-pulse text-slate-500">Routing across active key pools...</span>', assistantMsgId);
+      appendMessageBubble('assistant', '<span class="animate-pulse text-slate-500">Routing across active key pools & gateways...</span>', assistantMsgId);
 
       try {
         const res = await fetch('/v1/chat/completions', {
@@ -311,6 +327,12 @@ console.log(response.choices[0].message.content);</code></pre>
             messages: chatHistory
           })
         });
+
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          const rawText = await res.text();
+          throw new Error(`Unexpected non-JSON response: ${rawText.substring(0, 100)}...`);
+        }
 
         const data = await res.json();
         if (data.choices && data.choices[0]) {
