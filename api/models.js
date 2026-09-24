@@ -2,7 +2,7 @@ export const config = {
   runtime: 'edge',
 };
 
-// Initialize Gemini keys (Key_1 to Key_100)
+// 1. Initialize Gemini keys (Key_1 to Key_100)
 const rawGeminiKeys = [];
 for (let i = 1; i <= 100; i++) {
   const key = process.env[`Key_${i}`];
@@ -13,11 +13,18 @@ if (process.env.GEMINI_KEYS_POOL) {
   rawGeminiKeys.push(...pooled);
 }
 
-// Initialize Unorouter keys (Key_101 to Key_106)
+// 2. Initialize Unorouter keys (Key_101 to Key_105)
 const rawUnorouterKeys = [];
-for (let i = 101; i <= 106; i++) {
+for (let i = 101; i <= 105; i++) {
   const key = process.env[`Key_${i}`];
   if (key && key.trim()) rawUnorouterKeys.push(key.trim());
+}
+
+// 3. Initialize AIHubMix keys (Key_106 to Key_111)
+const rawAihubmixKeys = [];
+for (let i = 106; i <= 111; i++) {
+  const key = process.env[`Key_${i}`];
+  if (key && key.trim()) rawAihubmixKeys.push(key.trim());
 }
 
 const EXACT_FREE_QUOTAS = {
@@ -30,7 +37,12 @@ const EXACT_FREE_QUOTAS = {
 };
 
 const BANNED_PROJECT_IDS = ['gen-lang-client-0355993627', 'steveai-466814'];
-const NON_TEXT_KEYWORDS = ['image', 'tts', 'transcribe', 'clip', 'robotics', 'audio'];
+const NON_TEXT_KEYWORDS = ['image', 'tts', 'transcribe', 'clip', 'robotics', 'audio', 'embedding', 'rerank', 'moderation', 'video', '3d', 'stt'];
+
+function isTextModel(id) {
+  const lowerId = id.toLowerCase();
+  return !NON_TEXT_KEYWORDS.some(kw => lowerId.includes(kw));
+}
 
 function getExactQuota(id) {
   if (EXACT_FREE_QUOTAS[id]) return EXACT_FREE_QUOTAS[id];
@@ -83,9 +95,9 @@ export default async function handler(req) {
     if (validGeminiData && validGeminiData.models) {
       const geminiModels = validGeminiData.models
         .filter(m => {
-          const id = m.name.replace('models/', '').toLowerCase();
+          const id = m.name.replace('models/', '');
           const supportsText = m.supportedGenerationMethods?.includes('generateContent');
-          return supportsText && !NON_TEXT_KEYWORDS.some(kw => id.includes(kw));
+          return supportsText && isTextModel(id);
         })
         .map(m => {
           const id = m.name.replace('models/', '');
@@ -112,9 +124,9 @@ export default async function handler(req) {
         const unorouterData = await unorouterRes.json();
         if (unorouterData && unorouterData.models) {
           const freeUnorouterModels = unorouterData.models
-            .filter(m => m.is_free === true && m.online === true)
+            .filter(m => m.is_free === true && m.online === true && isTextModel(m.model_name))
             .map(m => ({
-              id: m.model_name, // Uses the exact model name provided (e.g. qwen3.8-27b:free) without duplication
+              id: m.model_name,
               provider: 'unorouter',
               rpm: 30 * Math.max(1, rawUnorouterKeys.length),
               tpm: 150000 * Math.max(1, rawUnorouterKeys.length),
@@ -126,6 +138,51 @@ export default async function handler(req) {
       }
     } catch (e) {
       // Ignore if offline
+    }
+
+    // 3. Fetch AIHubMix Free Models Catalog
+    try {
+      const aihubmixRes = await fetch('https://aihubmix.com/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${rawAihubmixKeys[0] || 'dummy'}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (aihubmixRes.ok) {
+        const aihubmixData = await aihubmixRes.json();
+        if (aihubmixData && aihubmixData.data) {
+          const freeAihubmixModels = aihubmixData.data
+            .filter(m => {
+              const id = (m.id || '').toLowerCase();
+              // Filter strictly for free tier designation or explicit free naming markers if applicable
+              const isFreeExplicit = id.includes('free') || m.is_free === true || id.includes('mini') || id.includes('flash');
+              return isFreeExplicit && isTextModel(id);
+            })
+            .map(m => ({
+              id: m.id,
+              provider: 'aihubmix',
+              rpm: 20 * Math.max(1, rawAihubmixKeys.length),
+              tpm: 100000 * Math.max(1, rawAihubmixKeys.length),
+              rpd: 500 * Math.max(1, rawAihubmixKeys.length)
+            }));
+          allFormattedModels.push(...freeAihubmixModels);
+          totalWorkingKeys += rawAihubmixKeys.length;
+        }
+      }
+    } catch (e) {
+      // Fallback standard free models list if live fetching fails
+      if (rawAihubmixKeys.length > 0) {
+        const fallbackAihubmix = ['gpt-4o-mini', 'claude-3-haiku-20240307'].map(id => ({
+          id: id,
+          provider: 'aihubmix',
+          rpm: 20 * rawAihubmixKeys.length,
+          tpm: 100000 * rawAihubmixKeys.length,
+          rpd: 500 * rawAihubmixKeys.length
+        }));
+        allFormattedModels.push(...fallbackAihubmix);
+        totalWorkingKeys += rawAihubmixKeys.length;
+      }
     }
 
     if (allFormattedModels.length === 0) {
@@ -154,4 +211,4 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
-}
+        }
