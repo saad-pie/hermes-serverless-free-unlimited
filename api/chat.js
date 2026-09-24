@@ -29,6 +29,15 @@ for (let i = 106; i <= 111; i++) {
 
 const NON_TEXT_KEYWORDS = ['image', 'tts', 'transcribe', 'clip', 'robotics', 'audio', 'embedding', 'rerank', 'moderation', 'video', '3d', 'stt'];
 
+// JankRouter specific models mapping
+const JANK_MODELS = [
+  'qwen3-guard-8b', 'qwen-guard', 'qwen-safety', 'qwen3.8-27b', 'qwen3.8', 'qwen-27b',
+  'qwen3.8-flash', 'qwen3.8-flash-next', 'qwen3.8-next', 'qwen-125b', 'nemotron-3.5-lightning-30b',
+  'nemotron', 'north-mini-code', 'north-mini', 'glm-4.6v-flash', 'glm-4.6v', 'glm-flash',
+  'glm-5.3-flash', 'glm-5.3-fast', 'gpt-5.6-luna', 'deepseek-v4-flash-0731', 'deepseek-v4-flash',
+  'gemma-4-26b-a4b', 'gemma-4-26b-a4b-it', 'gemma-4-26b', 'gemma-26b', 'diffusiongemma', 'moondream-3.1'
+];
+
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response('OK', {
@@ -61,20 +70,28 @@ export default async function handler(req) {
       });
     }
 
-    // Determine target provider
-    let keysPool = geminiKeysPool;
-    let targetUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+    // Determine target provider and URL
+    let keysPool = [];
+    let targetUrl = '';
+    let isKeyless = false;
 
     if (modelName.includes(':free') || modelName.includes('unorouter')) {
       keysPool = unorouterKeysPool;
       targetUrl = 'https://api.unorouter.com/v1/chat/completions';
+    } else if (JANK_MODELS.some(m => modelName.includes(m))) {
+      targetUrl = 'http://jankrouter.waifly.com/v1/chat/completions';
+      isKeyless = true;
     } else if (modelName.includes('gpt-') || modelName.includes('claude-') || modelName.includes('aihubmix') || modelName.includes('deepseek')) {
       keysPool = aihubmixKeysPool;
       targetUrl = 'https://aihubmix.com/v1/chat/completions';
+    } else {
+      // Default to FreeAIXYZ or Gemini based on availability
+      targetUrl = 'https://freeaixyz4all.vercel.app/api/v1/chat/completions';
+      isKeyless = true;
     }
 
-    // Fallback if specific pool is empty
-    if (keysPool.length === 0) {
+    // Fallback pools if specific ones are empty
+    if (!isKeyless && keysPool.length === 0) {
       if (geminiKeysPool.length > 0) {
         keysPool = geminiKeysPool;
         targetUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
@@ -84,33 +101,18 @@ export default async function handler(req) {
       } else if (unorouterKeysPool.length > 0) {
         keysPool = unorouterKeysPool;
         targetUrl = 'https://api.unorouter.com/v1/chat/completions';
+      } else {
+        // Fallback to FreeAIXYZ keyless gateway if all pools are empty
+        targetUrl = 'https://freeaixyz4all.vercel.app/api/v1/chat/completions';
+        isKeyless = true;
       }
-    }
-
-    if (keysPool.length === 0) {
-      return new Response(JSON.stringify({ error: 'No API keys found in environment variables for any provider.' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      });
     }
 
     const bodyText = await req.text();
     let upstreamResponse = null;
-    let attempts = 0;
-    const maxAttempts = Math.min(5, keysPool.length);
-    const triedIndices = new Set();
 
-    while (attempts < maxAttempts) {
-      attempts++;
-
-      let randomIndex;
-      do {
-        randomIndex = Math.floor(Math.random() * keysPool.length);
-      } while (triedIndices.has(randomIndex) && triedIndices.size < keysPool.length);
-
-      triedIndices.add(randomIndex);
-      const selectedKey = keysPool[randomIndex];
-
+    if (isKeyless) {
+      // Keyless upstream request (JankRouter / FreeAIXYZ)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 25000);
 
@@ -119,19 +121,54 @@ export default async function handler(req) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${selectedKey}`,
           },
           body: bodyText,
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
-
-        if (upstreamResponse.status !== 429 && upstreamResponse.status !== 403) {
-          break;
-        }
       } catch (err) {
         clearTimeout(timeoutId);
-        if (attempts >= maxAttempts) throw err;
+        throw err;
+      }
+    } else {
+      // Key-pooled upstream request (Gemini / Unorouter / AIHubMix)
+      let attempts = 0;
+      const maxAttempts = Math.min(5, keysPool.length);
+      const triedIndices = new Set();
+
+      while (attempts < maxAttempts) {
+        attempts++;
+
+        let randomIndex;
+        do {
+          randomIndex = Math.floor(Math.random() * keysPool.length);
+        } while (triedIndices.has(randomIndex) && triedIndices.size < keysPool.length);
+
+        triedIndices.add(randomIndex);
+        const selectedKey = keysPool[randomIndex];
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+        try {
+          upstreamResponse = await fetch(targetUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${selectedKey}`,
+            },
+            body: bodyText,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (upstreamResponse.status !== 429 && upstreamResponse.status !== 403) {
+            break;
+          }
+        } catch (err) {
+          clearTimeout(timeoutId);
+          if (attempts >= maxAttempts) throw err;
+        }
       }
     }
 
