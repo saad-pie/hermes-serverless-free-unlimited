@@ -102,7 +102,7 @@ export default async function handler(req) {
       totalWorkingKeys += workingGeminiCount;
     }
 
-    // 2. Fetch Unorouter Free Models Catalog (Public endpoint: no key required!)
+    // 2. Fetch Unorouter Free Models Catalog
     try {
       const unorouterRes = await fetch('https://api.unorouter.com/api/pricing/catalog', {
         method: 'GET',
@@ -114,7 +114,7 @@ export default async function handler(req) {
           const freeUnorouterModels = unorouterData.models
             .filter(m => m.is_free === true && m.online === true)
             .map(m => ({
-              id: `${m.model_name}:free`,
+              id: m.model_name, // Uses the exact model name provided (e.g. qwen3.8-27b:free) without duplication
               provider: 'unorouter',
               rpm: 30 * Math.max(1, rawUnorouterKeys.length),
               tpm: 150000 * Math.max(1, rawUnorouterKeys.length),
@@ -125,7 +125,7 @@ export default async function handler(req) {
         }
       }
     } catch (e) {
-      // Ignore unorouter catalog fetch errors if offline
+      // Ignore if offline
     }
 
     if (allFormattedModels.length === 0) {
@@ -154,4 +154,4 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
-                    }
+}
