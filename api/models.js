@@ -27,6 +27,9 @@ for (let i = 106; i <= 111; i++) {
   if (key && key.trim()) rawAihubmixKeys.push(key.trim());
 }
 
+// 4. Initialize OSAII key (Key_112)
+const rawOsaiiKey = process.env['Key_112'] ? process.env['Key_112'].trim() : '';
+
 const EXACT_FREE_QUOTAS = {
   'gemini-3.1-flash-lite': { rpm: 15, tpm: 250000, rpd: 500 },
   'gemini-2.5-flash-lite': { rpm: 10, tpm: 250000, rpd: 20 },
@@ -205,7 +208,6 @@ export default async function handler(req) {
         }
       }
     } catch (e) {
-      // Fallback known JankRouter text models if offline
       const fallbackJank = ['qwen3-guard-8b', 'qwen3.8-27b', 'qwen3.8-flash', 'nemotron-3.5-lightning-30b', 'north-mini-code', 'glm-4.6v-flash', 'glm-5.3-flash', 'gpt-5.6-luna', 'deepseek-v4-flash-0731', 'gemma-4-26b-a4b', 'moondream-3.1'].map(id => ({
         id: id,
         provider: 'jankrouter',
@@ -245,7 +247,52 @@ export default async function handler(req) {
         }
       }
     } catch (e) {
-      // Fallback default placeholder if offline
+      // Fallback
+    }
+
+    // 6. Fetch OSAII Models (Supports Key_112 or anonymous fallback)
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (rawOsaiiKey) headers['Authorization'] = `Bearer ${rawOsaiiKey}`;
+
+      const osaiiRes = await fetch('https://osaii.wyvernhub.net/api/v1/models', {
+        method: 'GET',
+        headers: headers
+      });
+      if (osaiiRes.ok) {
+        const osaiiData = await osaiiRes.json();
+        const osaiiList = osaiiData.data || osaiiData.models || osaiiData;
+        if (Array.isArray(osaiiList)) {
+          const osaiiModels = osaiiList
+            .filter(m => {
+              const modelId = typeof m === 'string' ? m : (m.id || '');
+              return isTextModel(modelId);
+            })
+            .map(m => {
+              const modelId = typeof m === 'string' ? m : m.id;
+              return {
+                id: modelId,
+                provider: 'osaii',
+                rpm: rawOsaiiKey ? 100 : 30,
+                tpm: 500000,
+                rpd: 5000
+              };
+            });
+          allFormattedModels.push(...osaiiModels);
+          if (rawOsaiiKey) totalWorkingKeys += 1;
+        }
+      }
+    } catch (e) {
+      // Fallback OSAII standard documented models if endpoint fails
+      const fallbackOsaii = ['fast', 'smart', 'mini', 'poolside/laguna-xs-2.1', 'poolside/laguna-s-2.1', 'microsoft/bitnet-b1.58-2B-4T'].map(id => ({
+        id: id,
+        provider: 'osaii',
+        rpm: rawOsaiiKey ? 100 : 30,
+        tpm: 500000,
+        rpd: 5000
+      }));
+      allFormattedModels.push(...fallbackOsaii);
+      if (rawOsaiiKey) totalWorkingKeys += 1;
     }
 
     if (allFormattedModels.length === 0) {
@@ -274,4 +321,5 @@ export default async function handler(req) {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });
   }
-                }
+            }
+    
