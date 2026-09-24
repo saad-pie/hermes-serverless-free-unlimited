@@ -2,27 +2,32 @@ export const config = {
   runtime: 'edge',
 };
 
-// Initialize Gemini keys pool (Key_1 to Key_100)
+// 1. Initialize Gemini keys pool (Key_1 to Key_100)
 const geminiKeysPool = [];
 for (let i = 1; i <= 100; i++) {
   const key = process.env[`Key_${i}`];
-  if (key && key.trim()) {
-    geminiKeysPool.push(key.trim());
-  }
+  if (key && key.trim()) geminiKeysPool.push(key.trim());
 }
 if (process.env.GEMINI_KEYS_POOL) {
   const pooled = process.env.GEMINI_KEYS_POOL.split(',').map(k => k.trim()).filter(Boolean);
   geminiKeysPool.push(...pooled);
 }
 
-// Initialize Unorouter keys pool (Key_101 to Key_106)
+// 2. Initialize Unorouter keys pool (Key_101 to Key_105)
 const unorouterKeysPool = [];
-for (let i = 101; i <= 106; i++) {
+for (let i = 101; i <= 105; i++) {
   const key = process.env[`Key_${i}`];
-  if (key && key.trim()) {
-    unorouterKeysPool.push(key.trim());
-  }
+  if (key && key.trim()) unorouterKeysPool.push(key.trim());
 }
+
+// 3. Initialize AIHubMix keys pool (Key_106 to Key_111)
+const aihubmixKeysPool = [];
+for (let i = 106; i <= 111; i++) {
+  const key = process.env[`Key_${i}`];
+  if (key && key.trim()) aihubmixKeysPool.push(key.trim());
+}
+
+const NON_TEXT_KEYWORDS = ['image', 'tts', 'transcribe', 'clip', 'robotics', 'audio', 'embedding', 'rerank', 'moderation', 'video', '3d', 'stt'];
 
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
@@ -48,17 +53,38 @@ export default async function handler(req) {
     const bodyJson = await clonedReq.json().catch(() => ({}));
     const modelName = (bodyJson.model || '').toLowerCase();
 
-    // Route to Unorouter if model contains ':free' or 'unorouter'
-    const isUnorouterModel = modelName.includes(':free') || modelName.includes('unorouter');
-    
-    let keysPool = isUnorouterModel ? unorouterKeysPool : geminiKeysPool;
-    let targetUrl = isUnorouterModel 
-      ? 'https://api.unorouter.com/v1/chat/completions' 
-      : 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+    // Prevent non-text models from passing through chat completion endpoints
+    if (NON_TEXT_KEYWORDS.some(kw => modelName.includes(kw))) {
+      return new Response(JSON.stringify({ error: `Model '${modelName}' is a non-text capability model and cannot be served via chat completions.` }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      });
+    }
 
+    // Determine target provider
+    let keysPool = geminiKeysPool;
+    let targetUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+
+    if (modelName.includes(':free') || modelName.includes('unorouter')) {
+      keysPool = unorouterKeysPool;
+      targetUrl = 'https://api.unorouter.com/v1/chat/completions';
+    } else if (modelName.includes('gpt-') || modelName.includes('claude-') || modelName.includes('aihubmix') || modelName.includes('deepseek')) {
+      keysPool = aihubmixKeysPool;
+      targetUrl = 'https://aihubmix.com/v1/chat/completions';
+    }
+
+    // Fallback if specific pool is empty
     if (keysPool.length === 0) {
-      keysPool = geminiKeysPool.length > 0 ? geminiKeysPool : unorouterKeysPool;
-      targetUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+      if (geminiKeysPool.length > 0) {
+        keysPool = geminiKeysPool;
+        targetUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+      } else if (aihubmixKeysPool.length > 0) {
+        keysPool = aihubmixKeysPool;
+        targetUrl = 'https://aihubmix.com/v1/chat/completions';
+      } else if (unorouterKeysPool.length > 0) {
+        keysPool = unorouterKeysPool;
+        targetUrl = 'https://api.unorouter.com/v1/chat/completions';
+      }
     }
 
     if (keysPool.length === 0) {
