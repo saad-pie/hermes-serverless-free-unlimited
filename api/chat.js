@@ -1,8 +1,4 @@
-export const config = {
-  runtime: 'edge',
-};
-
-// 1. Initialize Gemini keys pool (Key_1 to Key_100)
+// 1. Initialize Gemini keys pool (Key_1 to Key_100 and GEMINI_KEYS_POOL or GEMINI_API_KEY)
 const geminiKeysPool = [];
 for (let i = 1; i <= 100; i++) {
   const key = process.env[`Key_${i}`];
@@ -11,6 +7,9 @@ for (let i = 1; i <= 100; i++) {
 if (process.env.GEMINI_KEYS_POOL) {
   const pooled = process.env.GEMINI_KEYS_POOL.split(',').map(k => k.trim()).filter(Boolean);
   geminiKeysPool.push(...pooled);
+}
+if (process.env.GEMINI_API_KEY && !geminiKeysPool.includes(process.env.GEMINI_API_KEY.trim())) {
+  geminiKeysPool.push(process.env.GEMINI_API_KEY.trim());
 }
 
 // 2. Initialize Unorouter keys pool (Key_101 to Key_105)
@@ -66,8 +65,12 @@ export default async function handler(req) {
   }
 
   try {
-    const clonedReq = req.clone();
-    const bodyJson = await clonedReq.json().catch(() => ({}));
+    const bodyText = await req.text();
+    let bodyJson = {};
+    try {
+      bodyJson = JSON.parse(bodyText);
+    } catch (_) {}
+
     const modelName = (bodyJson.model || '').toLowerCase();
 
     // Prevent non-text models from passing through chat completion endpoints
@@ -120,7 +123,6 @@ export default async function handler(req) {
       }
     }
 
-    const bodyText = await req.text();
     let upstreamResponse = null;
 
     if (isKeyless || (!explicitAuthKey && keysPool.length === 0)) {
@@ -214,7 +216,7 @@ export default async function handler(req) {
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Proxy Edge routing failure', details: error.message }), {
+    return new Response(JSON.stringify({ error: 'Proxy routing failure', details: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     });

@@ -1,0 +1,8 @@
+{
+  "name": "Antigravity AI Gateway",
+  "description": "Unified LLM Router balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII pools.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ],
+  "permissions": []
+}

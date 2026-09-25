@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity AI Gateway — Unified LLM Router</title>
+  <meta name="description" content="Unified LLM Router balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII pools.">
+  <meta property="og:title" content="Antigravity AI Gateway — Unified LLM Router">
+  <meta property="og:description" content="Unified LLM Router balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII pools.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -57,12 +60,25 @@
           <h1 class="text-2xl font-bold tracking-tight">Active Model Registry</h1>
           <p class="text-slate-400 text-sm mt-1">Multi-provider unified gateway balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII pools.</p>
         </div>
-        <div class="flex items-center space-x-3 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800">
-          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
-          <div>
-            <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Active Key Pools</div>
-            <div id="stat-keys-count" class="text-sm font-bold text-emerald-400 font-mono">Loading pool...</div>
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-3 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Active Key Pools</div>
+              <div id="stat-keys-count" class="text-sm font-bold text-emerald-400 font-mono">Loading pool...</div>
+            </div>
           </div>
+          <div class="flex items-center space-x-3 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800">
+            <div class="w-2.5 h-2.5 rounded-full bg-cyan-500"></div>
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Verified Free Models</div>
+              <div id="stat-models-count" class="text-sm font-bold text-cyan-400 font-mono">0 active</div>
+            </div>
+          </div>
+          <button onclick="openDiagnosticModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-3 rounded-xl border border-slate-700 text-xs font-mono transition flex items-center space-x-2">
+            <i class="fa-solid fa-file-waveform text-emerald-400"></i>
+            <span>Diagnostic Report</span>
+          </button>
         </div>
       </div>
 
@@ -188,6 +204,7 @@ console.log(response.choices[0].message.content);</code></pre>
   <script>
     let globalModels = [];
     let chatHistory = [];
+    let latestDiagnosticReport = null;
 
     function switchTab(tab) {
       ['models', 'playground', 'docs'].forEach(t => {
@@ -206,7 +223,9 @@ console.log(response.choices[0].message.content);</code></pre>
         const data = await res.json();
         if (data && data.data) {
           globalModels = data.data;
-          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 112}+ Pooled & Keyless`;
+          latestDiagnosticReport = data.diagnostic_report || null;
+          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 0} Pooled`;
+          document.getElementById('stat-models-count').innerText = `${data.verified_free_models_count || globalModels.length} verified free`;
           renderModels(globalModels);
           populatePlaygroundDropdown(globalModels);
         } else {
@@ -215,7 +234,41 @@ console.log(response.choices[0].message.content);</code></pre>
       } catch (e) {
         document.getElementById('models-grid').innerHTML = `<div class="col-span-full py-12 text-center text-red-400 font-mono text-xs">Failed to fetch model registry: ${e.message}</div>`;
         document.getElementById('stat-keys-count').innerText = 'Pool Active';
+        document.getElementById('stat-models-count').innerText = '0 active';
       }
+    }
+
+    function openDiagnosticModal() {
+      let modal = document.getElementById('diagnostic-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'diagnostic-modal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4';
+        modal.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-file-waveform text-emerald-400"></i>
+                <h3 class="font-bold text-base text-slate-100">Gateway Diagnostic Report</h3>
+              </div>
+              <button onclick="closeDiagnosticModal()" class="text-slate-400 hover:text-slate-200 text-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-400">This report verifies active key pools, upstream provider connectivity, and strict true-free model filtering.</p>
+            <pre id="diagnostic-json" class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-emerald-300 max-h-[350px] overflow-y-auto select-all">Loading report...</pre>
+            <div class="flex justify-end pt-2">
+              <button onclick="closeDiagnosticModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-mono transition">Close</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+      document.getElementById('diagnostic-json').innerText = latestDiagnosticReport ? JSON.stringify(latestDiagnosticReport, null, 2) : JSON.stringify({ error: "Report not loaded yet." }, null, 2);
+      modal.classList.remove('hidden');
+    }
+
+    function closeDiagnosticModal() {
+      const modal = document.getElementById('diagnostic-modal');
+      if (modal) modal.classList.add('hidden');
     }
 
     function renderModels(models) {
