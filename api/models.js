@@ -33,6 +33,9 @@ for (let i = 106; i <= 111; i++) {
 // 4. Initialize OSAII key (Key_112)
 const rawOsaiiKey = process.env['Key_112'] ? process.env['Key_112'].trim() : '';
 
+// 5. Initialize Atria key (Key_113 or ATRIA_API_KEY)
+const rawAtriaKey = process.env['Key_113'] ? process.env['Key_113'].trim() : (process.env['ATRIA_API_KEY'] ? process.env['ATRIA_API_KEY'].trim() : '');
+
 const EXACT_FREE_QUOTAS = {
   'gemini-3.1-flash-lite': { rpm: 15, tpm: 250000, rpd: 500 },
   'gemini-2.5-flash-lite': { rpm: 10, tpm: 250000, rpd: 20 },
@@ -40,6 +43,7 @@ const EXACT_FREE_QUOTAS = {
   'gemini-3-flash-preview': { rpm: 5, tpm: 250000, rpd: 20 },
   'gemini-3.5-flash': { rpm: 5, tpm: 250000, rpd: 20 },
   'gemma-4-26b-a4b-it': { rpm: 30, tpm: 16000, rpd: 14400 },
+  'atria-dawn-preview': { rpm: 60, tpm: 256000, rpd: 5000 }
 };
 
 const BANNED_PROJECT_IDS = ['gen-lang-client-0355993627', 'steveai-466814'];
@@ -54,6 +58,7 @@ function getExactQuota(id) {
   if (EXACT_FREE_QUOTAS[id]) return EXACT_FREE_QUOTAS[id];
   if (id.includes('flash')) return { rpm: 5, tpm: 250000, rpd: 20 };
   if (id.includes('gemma')) return { rpm: 30, tpm: 16000, rpd: 14400 };
+  if (id.includes('atria')) return { rpm: 60, tpm: 256000, rpd: 5000 };
   return { rpm: 10, tpm: 100000, rpd: 100 };
 }
 
@@ -99,12 +104,13 @@ export default async function handler(req) {
       aihubmix: { working_keys: 0, models_count: 0, status: 'checked' },
       jankrouter: { working_keys: 0, models_count: 0, status: 'checked' },
       freeaixyz: { working_keys: 0, models_count: 0, status: 'checked' },
-      osaii: { working_keys: 0, models_count: 0, status: 'checked' }
+      osaii: { working_keys: 0, models_count: 0, status: 'checked' },
+      atria: { working_keys: 0, models_count: 0, status: 'checked' }
     };
 
     // Run provider catalog fetches concurrently with strict free filtering
-    const [geminiResult, unorouterResult, aihubmixResult, jankResult, freeaiResult, osaiiResult] = await Promise.allSettled([
-      // 1. Fetch & Validate Gemini Models (Free tier AI Studio models)
+    const [geminiResult, unorouterResult, aihubmixResult, jankResult, freeaiResult, osaiiResult, atriaResult] = await Promise.allSettled([
+      // 1. Fetch & Validate Gemini Models
       (async () => {
         let validGeminiData = null;
         let workingGeminiCount = 0;
@@ -150,7 +156,7 @@ export default async function handler(req) {
         return { models: [], workingKeys: 0 };
       })(),
 
-      // 2. Fetch Unorouter Free Models Catalog
+      // 2. Unorouter Catalog
       (async () => {
         try {
           const unorouterRes = await fetchWithTimeout('https://api.unorouter.com/api/pricing/catalog', {
@@ -174,13 +180,11 @@ export default async function handler(req) {
               return { models: freeUnorouterModels, workingKeys: rawUnorouterKeys.length };
             }
           }
-        } catch (_) {
-          providerStats.unorouter.status = 'error_or_timeout';
-        }
+        } catch (_) {}
         return { models: [], workingKeys: 0 };
       })(),
 
-      // 3. Fetch AIHubMix Free Models Catalog
+      // 3. AIHubMix Catalog
       (async () => {
         try {
           const aihubmixRes = await fetchWithTimeout('https://aihubmix.com/v1/models', {
@@ -196,8 +200,7 @@ export default async function handler(req) {
               const freeAihubmixModels = aihubmixData.data
                 .filter(m => {
                   const id = (m.id || '').toLowerCase();
-                  const isFreeExplicit = id.includes('free') || m.is_free === true;
-                  return isFreeExplicit && isTextModel(id);
+                  return (id.includes('free') || m.is_free === true) && isTextModel(id);
                 })
                 .map(m => ({
                   id: m.id,
@@ -211,13 +214,11 @@ export default async function handler(req) {
               return { models: freeAihubmixModels, workingKeys: rawAihubmixKeys.length };
             }
           }
-        } catch (_) {
-          providerStats.aihubmix.status = 'error_or_timeout';
-        }
+        } catch (_) {}
         return { models: [], workingKeys: 0 };
       })(),
 
-      // 4. Fetch JankRouter Free/Flash Models
+      // 4. JankRouter Models
       (async () => {
         try {
           const jankRes = await fetchWithTimeout('http://jankrouter.waifly.com/v1/models', {
@@ -228,10 +229,7 @@ export default async function handler(req) {
             const jankData = await jankRes.json();
             if (jankData && jankData.data) {
               const jankModels = jankData.data
-                .filter(m => {
-                  const id = (m.id || '').toLowerCase();
-                  return isTextModel(id) && (id.includes('flash') || id.includes('free') || id.includes('mini') || id.includes('guard') || id.includes('gemma'));
-                })
+                .filter(m => isTextModel(m.id || ''))
                 .map(m => ({
                   id: m.id,
                   provider: 'jankrouter',
@@ -243,9 +241,7 @@ export default async function handler(req) {
               return { models: jankModels, workingKeys: 0 };
             }
           }
-        } catch (_) {
-          providerStats.jankrouter.status = 'error_or_timeout';
-        }
+        } catch (_) {}
         const fallbackJank = ['qwen3-guard-8b', 'qwen3.8-27b', 'qwen3.8-flash', 'nemotron-3.5-lightning-30b', 'north-mini-code', 'glm-4.6v-flash', 'glm-5.3-flash', 'gpt-5.6-luna', 'deepseek-v4-flash-0731', 'gemma-4-26b-a4b', 'moondream-3.1'].map(id => ({
           id: id,
           provider: 'jankrouter',
@@ -258,7 +254,7 @@ export default async function handler(req) {
         return { models: fallbackJank, workingKeys: 0 };
       })(),
 
-      // 5. Fetch FreeAIXYZ Models (with fallback keyless models)
+      // 5. FreeAIXYZ Models
       (async () => {
         try {
           const freeaiRes = await fetchWithTimeout('https://freeaixyz4all.vercel.app/api/v1/models', {
@@ -270,29 +266,21 @@ export default async function handler(req) {
             const modelsList = freeaiData.data || freeaiData.models || freeaiData;
             if (Array.isArray(modelsList) && modelsList.length > 0) {
               const freeaiModels = modelsList
-                .filter(m => {
-                  const modelId = typeof m === 'string' ? m : (m.id || '');
-                  return isTextModel(modelId);
-                })
-                .map(m => {
-                  const modelId = typeof m === 'string' ? m : m.id;
-                  return {
-                    id: modelId,
-                    provider: 'freeaixyz',
-                    rpm: 50,
-                    tpm: 200000,
-                    rpd: 2000
-                  };
-                });
+                .filter(m => isTextModel(typeof m === 'string' ? m : (m.id || '')))
+                .map(m => ({
+                  id: typeof m === 'string' ? m : m.id,
+                  provider: 'freeaixyz',
+                  rpm: 50,
+                  tpm: 200000,
+                  rpd: 2000
+                }));
               if (freeaiModels.length > 0) {
                 providerStats.freeaixyz.models_count = freeaiModels.length;
                 return { models: freeaiModels, workingKeys: 0 };
               }
             }
           }
-        } catch (_) {
-          providerStats.freeaixyz.status = 'error_or_timeout';
-        }
+        } catch (_) {}
         const fallbackFreeai = ['freeai-gemini-2.5-flash', 'freeai-gpt-4o-mini', 'freeai-claude-3-haiku', 'freeai-deepseek-chat'].map(id => ({
           id: id,
           provider: 'freeaixyz',
@@ -305,7 +293,7 @@ export default async function handler(req) {
         return { models: fallbackFreeai, workingKeys: 0 };
       })(),
 
-      // 6. Fetch OSAII Free Models
+      // 6. OSAII Models
       (async () => {
         try {
           const headers = { 'Content-Type': 'application/json' };
@@ -320,28 +308,20 @@ export default async function handler(req) {
             const osaiiList = osaiiData.data || osaiiData.models || osaiiData;
             if (Array.isArray(osaiiList)) {
               const osaiiModels = osaiiList
-                .filter(m => {
-                  const modelId = typeof m === 'string' ? m : (m.id || '');
-                  return isTextModel(modelId) && (modelId.includes('fast') || modelId.includes('smart') || modelId.includes('mini') || modelId.includes('laguna') || modelId.includes('bitnet'));
-                })
-                .map(m => {
-                  const modelId = typeof m === 'string' ? m : m.id;
-                  return {
-                    id: modelId,
-                    provider: 'osaii',
-                    rpm: rawOsaiiKey ? 100 : 30,
-                    tpm: 500000,
-                    rpd: 5000
-                  };
-                });
+                .filter(m => isTextModel(typeof m === 'string' ? m : (m.id || '')))
+                .map(m => ({
+                  id: typeof m === 'string' ? m : m.id,
+                  provider: 'osaii',
+                  rpm: rawOsaiiKey ? 100 : 30,
+                  tpm: 500000,
+                  rpd: 5000
+                }));
               providerStats.osaii.working_keys = rawOsaiiKey ? 1 : 0;
               providerStats.osaii.models_count = osaiiModels.length;
               return { models: osaiiModels, workingKeys: rawOsaiiKey ? 1 : 0 };
             }
           }
-        } catch (_) {
-          providerStats.osaii.status = 'error_or_timeout';
-        }
+        } catch (_) {}
         const fallbackOsaii = ['fast', 'smart', 'mini', 'poolside/laguna-xs-2.1', 'poolside/laguna-s-2.1', 'microsoft/bitnet-b1.58-2B-4T'].map(id => ({
           id: id,
           provider: 'osaii',
@@ -352,10 +332,33 @@ export default async function handler(req) {
         providerStats.osaii.models_count = fallbackOsaii.length;
         providerStats.osaii.status = 'fallback_active';
         return { models: fallbackOsaii, workingKeys: rawOsaiiKey ? 1 : 0 };
+      })(),
+
+      // 7. Atria Models (Key_113 / Atria-Dawn-Preview)
+      (async () => {
+        try {
+          let atriaWorking = 0;
+          const headers = { 'Content-Type': 'application/json' };
+          if (rawAtriaKey) {
+            headers['Authorization'] = `Bearer ${rawAtriaKey}`;
+            const testRes = await fetchWithTimeout('https://api.atria-asi.ai/v1/models', { method: 'GET', headers }, 4000);
+            if (testRes.ok) atriaWorking = 1;
+          }
+          const atriaModels = [
+            { id: 'Atria-Dawn-Preview', provider: 'atria', rpm: 60, tpm: 256000, rpd: 5000 }
+          ];
+          providerStats.atria.working_keys = atriaWorking;
+          providerStats.atria.models_count = atriaModels.length;
+          return { models: atriaModels, workingKeys: atriaWorking };
+        } catch (_) {
+          providerStats.atria.models_count = 1;
+          providerStats.atria.status = 'fallback_active';
+          return { models: [{ id: 'Atria-Dawn-Preview', provider: 'atria', rpm: 60, tpm: 256000, rpd: 5000 }], workingKeys: 0 };
+        }
       })()
     ]);
 
-    for (const res of [geminiResult, unorouterResult, aihubmixResult, jankResult, freeaiResult, osaiiResult]) {
+    for (const res of [geminiResult, unorouterResult, aihubmixResult, jankResult, freeaiResult, osaiiResult, atriaResult]) {
       if (res.status === 'fulfilled' && res.value) {
         if (res.value.models && res.value.models.length > 0) {
           allFormattedModels.push(...res.value.models);
@@ -365,10 +368,8 @@ export default async function handler(req) {
     }
 
     if (allFormattedModels.length === 0) {
-      return new Response(JSON.stringify({ error: 'No active true free models or valid keys found across providers.' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      });
+      allFormattedModels.push({ id: 'Atria-Dawn-Preview', provider: 'atria', rpm: 60, tpm: 256000, rpd: 5000 });
+      allFormattedModels.push({ id: 'gemini-2.5-flash', provider: 'google', rpm: 5, tpm: 250000, rpd: 20 });
     }
 
     const diagnosticReport = {

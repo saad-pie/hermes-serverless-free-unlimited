@@ -31,6 +31,18 @@
       "dest": "/docs.html"
     },
     {
+      "src": "/models.html",
+      "dest": "/models.html"
+    },
+    {
+      "src": "/playground.html",
+      "dest": "/playground.html"
+    },
+    {
+      "src": "/docs.html",
+      "dest": "/docs.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

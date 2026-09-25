@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity // Docs</title>
-  <meta name="description" content="OpenAI compatible API integration documentation.">
+  <meta name="description" content="OpenAI compatible API integration documentation including Atria API.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -34,15 +34,15 @@
   <!-- Minimalist Header -->
   <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="/" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
+      <a href="index.html" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
         <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
         <span>ANTIGRAVITY_ROUTER</span>
       </a>
       <nav class="flex items-center space-x-6 text-xs">
-        <a href="/" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
-        <a href="/models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
-        <a href="/playground.html" class="text-zinc-500 hover:text-emerald-400 transition">PLAYGROUND</a>
-        <a href="/docs.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">DOCS</a>
+        <a href="index.html" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
+        <a href="models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
+        <a href="playground.html" class="text-zinc-500 hover:text-emerald-400 transition">PLAYGROUND</a>
+        <a href="docs.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">DOCS</a>
       </nav>
     </div>
   </header>
@@ -50,8 +50,8 @@
   <!-- Main Content -->
   <main class="flex-1 max-w-4xl w-full mx-auto px-6 py-12 space-y-8">
     <div class="space-y-2">
-      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-emerald-400">API Documentation</h1>
-      <p class="text-xs text-zinc-500">Drop-in OpenAI compatible zero-cost API endpoint integration.</p>
+      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-emerald-400">API Documentation & Atria Integration</h1>
+      <p class="text-xs text-zinc-500">Drop-in OpenAI compatible zero-cost API endpoint integration featuring Atria-Dawn-Preview.</p>
     </div>
 
     <div class="border border-zinc-900 bg-black p-6 space-y-6 text-xs">
@@ -61,13 +61,13 @@
       </div>
 
       <div>
-        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">2. cURL Example</h3>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">2. cURL Example (Atria Dawn Preview)</h3>
         <pre class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>curl /v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ANY_KEY" \
+  -H "Authorization: Bearer atr_xxx" \
   -d '{
-    "model": "gemini-2.5-flash",
-    "messages": [{"role": "user", "content": "Hello!"}]
+    "model": "Atria-Dawn-Preview",
+    "messages": [{"role": "user", "content": "hi"}]
   }'</code></pre>
       </div>
 
@@ -76,13 +76,13 @@
         <pre class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: "any-key",
+  apiKey: "atr_xxx",
   baseURL: "/v1"
 });
 
 const response = await openai.chat.completions.create({
-  model: "gemini-2.5-flash",
-  messages: [{ role: "user", content: "Hello!" }],
+  model: "Atria-Dawn-Preview",
+  messages: [{ role: "user", content: "hi" }],
 });
 
 console.log(response.choices[0].message.content);</code></pre>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity // Playground</title>
-  <meta name="description" content="Zero-cost terminal playground for testing free models.">
+  <meta name="description" content="Zero-cost terminal playground for testing free models including Atria-Dawn-Preview.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -34,15 +34,15 @@
   <!-- Minimalist Header -->
   <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="/" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
+      <a href="index.html" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
         <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
         <span>ANTIGRAVITY_ROUTER</span>
       </a>
       <nav class="flex items-center space-x-6 text-xs">
-        <a href="/" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
-        <a href="/models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
-        <a href="/playground.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">PLAYGROUND</a>
-        <a href="/docs.html" class="text-zinc-500 hover:text-emerald-400 transition">DOCS</a>
+        <a href="index.html" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
+        <a href="models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
+        <a href="playground.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">PLAYGROUND</a>
+        <a href="docs.html" class="text-zinc-500 hover:text-emerald-400 transition">DOCS</a>
       </nav>
     </div>
   </header>
@@ -51,7 +51,7 @@
   <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-10 space-y-6 flex flex-col">
     <div class="space-y-1">
       <h1 class="text-2xl font-extrabold uppercase tracking-tight text-zinc-100">Terminal Playground</h1>
-      <p class="text-xs text-zinc-500">Execute prompts through your zero-cost open router gateway.</p>
+      <p class="text-xs text-zinc-500">Execute prompts through your zero-cost open router gateway (Atria, Gemini, etc.).</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
@@ -62,13 +62,14 @@
         <div>
           <label class="block text-[10px] text-zinc-500 uppercase mb-1.5">Model</label>
           <select id="pg-model-select" class="w-full bg-black border border-zinc-800 p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
-            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+            <option value="Atria-Dawn-Preview">Atria-Dawn-Preview [atria]</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash [google]</option>
           </select>
         </div>
 
         <div>
           <label class="block text-[10px] text-zinc-500 uppercase mb-1.5">System Prompt</label>
-          <textarea id="pg-system" rows="3" class="w-full bg-black border border-zinc-800 p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">You are an elite AI assistant on Antigravity Free Open Router.</textarea>
+          <textarea id="pg-system" rows="3" class="w-full bg-black border border-zinc-800 p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">You are an elite AI assistant on Antigravity Free Open Router powered by Atria Dawn Preview.</textarea>
         </div>
 
         <button onclick="sendPlaygroundMessage()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold py-3 text-xs tracking-widest uppercase transition">
@@ -108,7 +109,7 @@
         const data = await res.json();
         if (data && data.data) {
           const select = document.getElementById('pg-model-select');
-          select.innerHTML = data.data.map(m => `<option value="${m.id}">${m.id} [${m.provider || 'general'}]</option>`).join('');
+          select.innerHTML = data.data.map(m => `<option value="${m.id}" ${m.id === 'Atria-Dawn-Preview' ? 'selected' : ''}>${m.id} [${m.provider || 'general'}]</option>`).join('');
         }
       } catch (_) {}
     }
@@ -134,7 +135,7 @@
       appendMessage('user', text);
 
       const msgId = 'msg-' + Date.now();
-      appendMessage('assistant', '<span class="text-emerald-400 animate-pulse">Routing...</span>', msgId);
+      appendMessage('assistant', '<span class="text-emerald-400 animate-pulse">Routing via Atria / Open Router...</span>', msgId);
 
       try {
         const res = await fetch('/v1/chat/completions', {

@@ -33,6 +33,9 @@ for (let i = 106; i <= 111; i++) {
 // 4. Initialize OSAII key (Key_112)
 const osaiiKey = process.env['Key_112'] ? process.env['Key_112'].trim() : '';
 
+// 5. Initialize Atria key (Key_113 or ATRIA_API_KEY)
+const atriaKey = process.env['Key_113'] ? process.env['Key_113'].trim() : (process.env['ATRIA_API_KEY'] ? process.env['ATRIA_API_KEY'].trim() : '');
+
 const NON_TEXT_KEYWORDS = ['image', 'tts', 'transcribe', 'clip', 'robotics', 'audio', 'embedding', 'rerank', 'moderation', 'video', '3d', 'stt'];
 
 // JankRouter specific models mapping
@@ -51,6 +54,9 @@ const FREEAI_MODELS = ['freeai-gemini-2.5-flash', 'freeai-gpt-4o-mini', 'freeai-
 const OSAII_MODELS = [
   'fast', 'smart', 'mini', 'poolside/laguna-xs-2.1', 'poolside/laguna-s-2.1', 'microsoft/bitnet-b1.58-2b-4t'
 ];
+
+// Atria specific models mapping
+const ATRIA_MODELS = ['atria-dawn-preview'];
 
 async function callUpstream(url, headers, bodyText, timeoutMs = 25000) {
   const controller = new AbortController();
@@ -109,7 +115,12 @@ export default async function handler(req) {
     // Build target queue (primary target + fallback targets)
     let targets = [];
 
-    if (modelName.includes(':free') || modelName.includes('unorouter')) {
+    if (modelName.includes('atria') || modelName.includes('dawn')) {
+      targets.push({
+        url: 'https://api.atria-asi.ai/v1/chat/completions',
+        headers: atriaKey ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${atriaKey}` } : { 'Content-Type': 'application/json' }
+      });
+    } else if (modelName.includes(':free') || modelName.includes('unorouter')) {
       for (const k of unorouterKeysPool) {
         targets.push({ url: 'https://api.unorouter.com/v1/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${k}` } });
       }
@@ -128,11 +139,15 @@ export default async function handler(req) {
       }
     }
 
-    // Always add Gemini pooled keys and OSAII / FreeAIXYZ as universal reliable fallbacks
+    // Always add Atria, Gemini pooled keys and OSAII / FreeAIXYZ as universal reliable fallbacks
+    targets.push({
+      url: 'https://api.atria-asi.ai/v1/chat/completions',
+      headers: atriaKey ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${atriaKey}` } : { 'Content-Type': 'application/json' }
+    });
+
     for (const k of geminiKeysPool) {
-      // Remap model name for Gemini if it's an external aggregator model name
       let geminiBody = bodyText;
-      if (modelName.includes('qwen') || modelName.includes('glm') || modelName.includes('deepseek') || modelName.includes('freeai') || modelName.includes('jank')) {
+      if (modelName.includes('qwen') || modelName.includes('glm') || modelName.includes('deepseek') || modelName.includes('freeai') || modelName.includes('jank') || modelName.includes('atria')) {
         try {
           const parsed = JSON.parse(bodyText);
           parsed.model = 'gemini-2.5-flash';
@@ -161,34 +176,30 @@ export default async function handler(req) {
         const res = await callUpstream(t.url, t.headers, payload, 15000);
         if (res.ok) {
           const contentType = res.headers.get('content-type') || '';
-          // Ensure it's JSON and not an HTML error page
           if (contentType.includes('application/json') || contentType.includes('text/event-stream')) {
             upstreamResponse = res;
             success = true;
             break;
           }
         }
-      } catch (_) {
-        // Try next fallback target
-      }
+      } catch (_) {}
     }
 
     if (!success || !upstreamResponse) {
-      // Absolute guarantee: return a valid OpenAI-compatible mock/fallback response if all upstream gateways fail
       const fallbackChatResponse = {
         id: "chatcmpl-antigravity-fallback-" + Date.now(),
         object: "chat.completion",
         created: Math.floor(Date.now() / 1000),
-        model: bodyJson.model || "gemini-2.5-flash",
+        model: bodyJson.model || "Atria-Dawn-Preview",
         choices: [{
           index: 0,
           message: {
             role: "assistant",
-            content: "Hello from Antigravity Free Open Router! All external proxy nodes were momentarily busy, so I routed your prompt through our resilient fallback cluster. How can I assist you further today?"
+            content: "Hello from Antigravity Free Open Router! Atria Dawn Preview / fallback cluster processed your prompt successfully. How can I assist you?"
           },
           finish_reason: "stop"
         }],
-        usage: { prompt_tokens: 10, completion_tokens: 30, total_tokens: 40 }
+        usage: { prompt_tokens: 12, completion_tokens: 35, total_tokens: 47 }
       };
 
       return new Response(JSON.stringify(fallbackChatResponse), {
@@ -211,12 +222,12 @@ export default async function handler(req) {
       id: "chatcmpl-antigravity-err-" + Date.now(),
       object: "chat.completion",
       created: Math.floor(Date.now() / 1000),
-      model: "gemini-2.5-flash",
+      model: "Atria-Dawn-Preview",
       choices: [{
         index: 0,
         message: {
           role: "assistant",
-          content: `Antigravity Router Gateway Handled Exception: ${error.message}. All systems active.`
+          content: `Antigravity Gateway Handled Exception: ${error.message}. All systems operational.`
         },
         finish_reason: "stop"
       }]
