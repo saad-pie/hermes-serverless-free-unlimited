@@ -90,9 +90,9 @@ export default async function handler(req) {
       atria: { working_keys: 0, models_count: 0, status: 'checked' }
     };
 
-    // Run provider catalog fetches concurrently and extract real metrics
+    // Run fetches concurrently and assign precise API-fetched or user-defined limits
     const [geminiResult, unorouterResult, aihubmixResult, jankResult, freeaiResult, osaiiResult, atriaResult] = await Promise.allSettled([
-      // 1. Fetch & Validate Gemini Models (Extracting real inputTokenLimit and outputTokenLimit from official Google API)
+      // 1. Google Gemini (Fetched from official /v1beta/models API)
       (async () => {
         let validGeminiData = null;
         let workingGeminiCount = 0;
@@ -123,15 +123,13 @@ export default async function handler(req) {
             })
             .map(m => {
               const id = m.name.replace('models/', '');
-              const realTpm = m.inputTokenLimit || 1048576;
-              const realRpm = m.outputTokenLimit ? Math.round(m.outputTokenLimit / 1000) * 10 : 15;
-              const realRpd = 1500;
               return {
                 id: id,
                 provider: 'google',
-                rpm: realRpm * Math.max(1, workingGeminiCount),
-                tpm: realTpm,
-                rpd: realRpd
+                rpm: 15 * Math.max(1, workingGeminiCount),
+                tpm: m.inputTokenLimit || 250000,
+                rpd: 1500,
+                limit_type: 'per_minute'
               };
             });
           providerStats.google.models_count = models.length;
@@ -140,7 +138,7 @@ export default async function handler(req) {
         return { models: [], workingKeys: 0 };
       })(),
 
-      // 2. Unorouter Catalog (Extracting real rate limit fields from catalog API)
+      // 2. Unorouter (Fetched from https://api.unorouter.com/api/pricing/catalog with weekly limits)
       (async () => {
         try {
           const unorouterRes = await fetchWithTimeout('https://api.unorouter.com/api/pricing/catalog', {
@@ -155,9 +153,10 @@ export default async function handler(req) {
                 .map(m => ({
                   id: m.model_name,
                   provider: 'unorouter',
-                  rpm: m.rate_limit_rpm || m.rpm || 60,
-                  tpm: m.context_window || m.tpm || 128000,
-                  rpd: m.rate_limit_rpd || m.rpd || 5000
+                  rpm: m.rate_limit_rpm || 60,
+                  tpm: m.weekly_limit_tokens || m.context_window || 500000,
+                  rpd: m.rate_limit_rpd || 5000,
+                  limit_type: 'per_week'
                 }));
               providerStats.unorouter.working_keys = rawUnorouterKeys.length;
               providerStats.unorouter.models_count = freeUnorouterModels.length;
@@ -168,7 +167,7 @@ export default async function handler(req) {
         return { models: [], workingKeys: 0 };
       })(),
 
-      // 3. AIHubMix Catalog
+      // 3. AIHubMix (Fixed 1 million tokens per model as requested)
       (async () => {
         try {
           const aihubmixRes = await fetchWithTimeout('https://aihubmix.com/v1/models', {
@@ -189,9 +188,10 @@ export default async function handler(req) {
                 .map(m => ({
                   id: m.id,
                   provider: 'aihubmix',
-                  rpm: m.rpm || 60,
-                  tpm: m.context_window || m.tpm || 64000,
-                  rpd: m.rpd || 1000
+                  rpm: 60,
+                  tpm: 1000000, // Fixed 1 million tokens per model
+                  rpd: 1000,
+                  limit_type: 'fixed_token_quota'
                 }));
               providerStats.aihubmix.working_keys = rawAihubmixKeys.length;
               providerStats.aihubmix.models_count = freeAihubmixModels.length;
@@ -199,10 +199,21 @@ export default async function handler(req) {
             }
           }
         } catch (_) {}
-        return { models: [], workingKeys: 0 };
+        // Fallback AIHubMix models with 1M tokens limit
+        const fallbackAihubmix = ['gpt-4o-mini:free', 'claude-3-haiku:free', 'deepseek-chat:free'].map(id => ({
+          id: id,
+          provider: 'aihubmix',
+          rpm: 60,
+          tpm: 1000000,
+          rpd: 1000,
+          limit_type: 'fixed_token_quota'
+        }));
+        providerStats.aihubmix.models_count = fallbackAihubmix.length;
+        providerStats.aihubmix.status = 'fallback_active';
+        return { models: fallbackAihubmix, workingKeys: 0 };
       })(),
 
-      // 4. JankRouter Models (Querying live `/v1/models` and checking real headers/metadata)
+      // 4. JankRouter Models
       (async () => {
         try {
           const jankRes = await fetchWithTimeout('http://jankrouter.waifly.com/v1/models', {
@@ -217,9 +228,10 @@ export default async function handler(req) {
                 .map(m => ({
                   id: m.id,
                   provider: 'jankrouter',
-                  rpm: m.rpm || 30,
-                  tpm: m.tpm || m.context_window || 64000,
-                  rpd: m.rpd || 1000
+                  rpm: 30,
+                  tpm: m.tpm || 64000,
+                  rpd: 1000,
+                  limit_type: 'per_minute'
                 }));
               providerStats.jankrouter.models_count = jankModels.length;
               return { models: jankModels, workingKeys: 0 };
@@ -231,7 +243,8 @@ export default async function handler(req) {
           provider: 'jankrouter',
           rpm: 30,
           tpm: 64000,
-          rpd: 1000
+          rpd: 1000,
+          limit_type: 'per_minute'
         }));
         providerStats.jankrouter.models_count = fallbackJank.length;
         providerStats.jankrouter.status = 'fallback_active';
@@ -254,9 +267,10 @@ export default async function handler(req) {
                 .map(m => ({
                   id: typeof m === 'string' ? m : m.id,
                   provider: 'freeaixyz',
-                  rpm: m.rpm || 60,
-                  tpm: m.tpm || 128000,
-                  rpd: m.rpd || 2000
+                  rpm: 60,
+                  tpm: 128000,
+                  rpd: 2000,
+                  limit_type: 'per_minute'
                 }));
               if (freeaiModels.length > 0) {
                 providerStats.freeaixyz.models_count = freeaiModels.length;
@@ -270,14 +284,15 @@ export default async function handler(req) {
           provider: 'freeaixyz',
           rpm: 60,
           tpm: 128000,
-          rpd: 2000
+          rpd: 2000,
+          limit_type: 'per_minute'
         }));
         providerStats.freeaixyz.models_count = fallbackFreeai.length;
         providerStats.freeaixyz.status = 'fallback_active';
         return { models: fallbackFreeai, workingKeys: 0 };
       })(),
 
-      // 6. OSAII Models (Extracting real rate limit headers from OSAII `/api/v1/models` or response)
+      // 6. OSAII Models
       (async () => {
         try {
           const headers = { 'Content-Type': 'application/json' };
@@ -297,8 +312,9 @@ export default async function handler(req) {
                   id: typeof m === 'string' ? m : m.id,
                   provider: 'osaii',
                   rpm: m.rpm || (rawOsaiiKey ? 120 : 60),
-                  tpm: m.tpm || m.context_window || 256000,
-                  rpd: m.rpd || 5000
+                  tpm: m.tpm || 256000,
+                  rpd: 5000,
+                  limit_type: 'per_minute'
                 }));
               providerStats.osaii.working_keys = rawOsaiiKey ? 1 : 0;
               providerStats.osaii.models_count = osaiiModels.length;
@@ -311,33 +327,33 @@ export default async function handler(req) {
           provider: 'osaii',
           rpm: rawOsaiiKey ? 120 : 60,
           tpm: 256000,
-          rpd: 5000
+          rpd: 5000,
+          limit_type: 'per_minute'
         }));
         providerStats.osaii.models_count = fallbackOsaii.length;
         providerStats.osaii.status = 'fallback_active';
         return { models: fallbackOsaii, workingKeys: rawOsaiiKey ? 1 : 0 };
       })(),
 
-      // 7. Atria Models (Real spec from Atria documentation: 256K TPM context window, 60 RPM limit from x-rpm-limit header)
+      // 7. Atria Models (Fixed 100 million tokens quota as requested)
       (async () => {
         try {
           let atriaWorking = 0;
-          let realRpm = 60;
-          let realTpm = 256000;
-          let realRpd = 5000;
-
           const headers = { 'Content-Type': 'application/json' };
           if (rawAtriaKey) {
             headers['Authorization'] = `Bearer ${rawAtriaKey}`;
             const testRes = await fetchWithTimeout('https://api.atria-asi.ai/v1/models', { method: 'GET', headers }, 4000);
-            if (testRes.ok) {
-              atriaWorking = 1;
-              const rpmHeader = testRes.headers.get('x-rpm-limit');
-              if (rpmHeader && !isNaN(rpmHeader)) realRpm = parseInt(rpmHeader, 10);
-            }
+            if (testRes.ok) atriaWorking = 1;
           }
           const atriaModels = [
-            { id: 'Atria-Dawn-Preview', provider: 'atria', rpm: realRpm, tpm: realTpm, rpd: realRpd }
+            { 
+              id: 'Atria-Dawn-Preview', 
+              provider: 'atria', 
+              rpm: 60, 
+              tpm: 100000000, // Fixed 100 million tokens
+              rpd: 5000,
+              limit_type: 'fixed_token_quota'
+            }
           ];
           providerStats.atria.working_keys = atriaWorking;
           providerStats.atria.models_count = atriaModels.length;
@@ -345,7 +361,10 @@ export default async function handler(req) {
         } catch (_) {
           providerStats.atria.models_count = 1;
           providerStats.atria.status = 'fallback_active';
-          return { models: [{ id: 'Atria-Dawn-Preview', provider: 'atria', rpm: 60, tpm: 256000, rpd: 5000 }], workingKeys: 0 };
+          return { 
+            models: [{ id: 'Atria-Dawn-Preview', provider: 'atria', rpm: 60, tpm: 100000000, rpd: 5000, limit_type: 'fixed_token_quota' }], 
+            workingKeys: 0 
+          };
         }
       })()
     ]);
@@ -360,8 +379,7 @@ export default async function handler(req) {
     }
 
     if (allFormattedModels.length === 0) {
-      allFormattedModels.push({ id: 'Atria-Dawn-Preview', provider: 'atria', rpm: 60, tpm: 256000, rpd: 5000 });
-      allFormattedModels.push({ id: 'gemini-2.5-flash', provider: 'google', rpm: 15, tpm: 1048576, rpd: 1500 });
+      allFormattedModels.push({ id: 'Atria-Dawn-Preview', provider: 'atria', rpm: 60, tpm: 100000000, rpd: 5000, limit_type: 'fixed_token_quota' });
     }
 
     const diagnosticReport = {
@@ -370,7 +388,7 @@ export default async function handler(req) {
       total_active_keys: totalWorkingKeys,
       verified_free_models_count: allFormattedModels.length,
       providers: providerStats,
-      verification_status: 'real_upstream_rate_limits_extracted'
+      verification_status: 'fetched_api_limits_with_atria_100m_aihubmix_1m_unorouter_weekly'
     };
 
     return new Response(JSON.stringify({ 

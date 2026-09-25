@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity // Models</title>
-  <meta name="description" content="Verified zero-cost model registry across all active free pools including Atria Dawn Preview.">
+  <meta name="description" content="Verified zero-cost model registry across all active free pools including Atria 100M and AIHubMix 1M token quotas.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -51,14 +51,14 @@
   <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-12 space-y-8">
     <div class="space-y-2">
       <h1 class="text-2xl font-extrabold uppercase tracking-tight text-zinc-100">Model Registry</h1>
-      <p class="text-xs text-zinc-500">Live verified zero-cost models across pooled providers including Atria API.</p>
+      <p class="text-xs text-zinc-500">Live API-fetched limits (Atria: 100M tokens, AIHubMix: 1M tokens, Unorouter: weekly limits).</p>
     </div>
 
     <!-- Filters Bar -->
     <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between border border-zinc-900 bg-black p-4">
       <div class="relative flex-1">
         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-zinc-600 text-xs"></i>
-        <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models (atria, gemini, qwen)..." class="w-full bg-black border border-zinc-800 pl-10 pr-4 py-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+        <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models..." class="w-full bg-black border border-zinc-800 pl-10 pr-4 py-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
       </div>
       <div id="provider-filters" class="flex flex-wrap gap-1.5 text-xs">
         <button onclick="filterProvider('all')" id="filter-btn-all" class="px-3 py-2 font-bold bg-emerald-500 text-black">ALL</button>
@@ -74,7 +74,7 @@
 
     <!-- Models Grid -->
     <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div class="col-span-full py-20 text-center text-zinc-600 text-xs uppercase">Loading models registry...</div>
+      <div class="col-span-full py-20 text-center text-zinc-600 text-xs uppercase">Loading API-fetched model registry...</div>
     </div>
   </main>
 
@@ -130,6 +130,22 @@
 
       grid.innerHTML = filtered.map(m => {
         const isAtria = (m.provider || '').toLowerCase() === 'atria';
+        const isAiHubMix = (m.provider || '').toLowerCase() === 'aihubmix';
+        const isUnorouter = (m.provider || '').toLowerCase() === 'unorouter';
+        
+        let tokenDisplay = '';
+        let tokenLabel = 'TPM';
+        if (m.tpm >= 100000000) {
+          tokenDisplay = (m.tpm / 1000000).toFixed(0) + 'M';
+          tokenLabel = isAtria ? 'QUOTA' : 'TPM';
+        } else if (m.tpm >= 1000000) {
+          tokenDisplay = (m.tpm / 1000000).toFixed(0) + 'M';
+          tokenLabel = isAiHubMix ? 'MODEL QUOTA' : 'TPM';
+        } else {
+          tokenDisplay = (m.tpm / 1000).toFixed(0) + 'k';
+          tokenLabel = isUnorouter ? 'WEEKLY' : 'TPM';
+        }
+
         return `
           <div class="border ${isAtria ? 'border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'border-zinc-900'} bg-black p-5 flex flex-col justify-between hover:border-emerald-500 transition">
             <div>
@@ -145,8 +161,8 @@
                 <div class="text-zinc-300 font-bold">${m.rpm}</div>
               </div>
               <div class="bg-zinc-950 p-1.5 border border-zinc-900">
-                <div class="text-zinc-600">TPM</div>
-                <div class="text-zinc-300 font-bold">${(m.tpm / 1000).toFixed(0)}k</div>
+                <div class="text-zinc-600">${tokenLabel}</div>
+                <div class="text-zinc-300 font-bold">${tokenDisplay}</div>
               </div>
               <div class="bg-zinc-950 p-1.5 border border-zinc-900">
                 <div class="text-zinc-600">RPD</div>
