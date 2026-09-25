@@ -1,3 +1,7 @@
+export const config = {
+  runtime: 'edge',
+};
+
 // 1. Initialize Gemini keys pool (Key_1 to Key_100 and GEMINI_KEYS_POOL or GEMINI_API_KEY)
 const geminiKeysPool = [];
 for (let i = 1; i <= 100; i++) {

@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "outputDirectory": ".",
   "routes": [
     {
       "src": "/v1/chat/completions",
@@ -8,6 +9,18 @@
     {
       "src": "/api/chat",
       "dest": "/api/chat"
+    },
+    {
+      "src": "/v1/models",
+      "dest": "/api/models"
+    },
+    {
+      "src": "/api/models",
+      "dest": "/api/models"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }

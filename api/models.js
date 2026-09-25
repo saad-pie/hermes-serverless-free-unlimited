@@ -1,3 +1,7 @@
+export const config = {
+  runtime: 'edge',
+};
+
 // 1. Initialize Gemini keys (Key_1 to Key_100 and GEMINI_KEYS_POOL or GEMINI_API_KEY)
 const rawGeminiKeys = [];
 for (let i = 1; i <= 100; i++) {
@@ -126,7 +130,6 @@ export default async function handler(req) {
             .filter(m => {
               const id = m.name.replace('models/', '');
               const supportsText = m.supportedGenerationMethods?.includes('generateContent');
-              // Only true free tier text models (flash, lite, gemma)
               const isFreeTierGemini = id.includes('flash') || id.includes('gemma') || id.includes('lite');
               return supportsText && isTextModel(id) && isFreeTierGemini;
             })
@@ -147,7 +150,7 @@ export default async function handler(req) {
         return { models: [], workingKeys: 0 };
       })(),
 
-      // 2. Fetch Unorouter Free Models Catalog (Strictly is_free === true)
+      // 2. Fetch Unorouter Free Models Catalog
       (async () => {
         try {
           const unorouterRes = await fetchWithTimeout('https://api.unorouter.com/api/pricing/catalog', {
@@ -177,7 +180,7 @@ export default async function handler(req) {
         return { models: [], workingKeys: 0 };
       })(),
 
-      // 3. Fetch AIHubMix Free Models Catalog (Strictly require explicit free flag)
+      // 3. Fetch AIHubMix Free Models Catalog
       (async () => {
         try {
           const aihubmixRes = await fetchWithTimeout('https://aihubmix.com/v1/models', {
@@ -193,7 +196,6 @@ export default async function handler(req) {
               const freeAihubmixModels = aihubmixData.data
                 .filter(m => {
                   const id = (m.id || '').toLowerCase();
-                  // Stricter check for true free models only
                   const isFreeExplicit = id.includes('free') || m.is_free === true;
                   return isFreeExplicit && isTextModel(id);
                 })
