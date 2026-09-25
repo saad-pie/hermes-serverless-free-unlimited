@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity // Docs</title>
-  <meta name="description" content="OpenAI compatible API integration documentation for Antigravity Free Open Router.">
+  <meta name="description" content="OpenAI compatible API integration documentation for Antigravity Free Open Router, including model fetching endpoints.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -50,30 +50,28 @@
   <!-- Main Content -->
   <main class="flex-1 max-w-4xl w-full mx-auto px-6 py-12 space-y-8">
     <div class="space-y-2">
-      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-emerald-400">API Documentation</h1>
-      <p class="text-xs text-zinc-500">Drop-in OpenAI compatible zero-cost API endpoint integration. No client-side API keys required.</p>
+      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-emerald-400">API Documentation & Model Fetching</h1>
+      <p class="text-xs text-zinc-500">Drop-in OpenAI compatible zero-cost API endpoints including live model list retrieval.</p>
     </div>
 
     <div class="border border-zinc-900 bg-black p-6 space-y-6 text-xs">
       <div>
-        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">1. Base Endpoint</h3>
-        <div class="bg-zinc-950 p-3 border border-zinc-900 text-emerald-400 font-mono select-all">/v1</div>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">1. Base Endpoints</h3>
+        <div class="space-y-2 text-zinc-300">
+          <div><code class="text-emerald-400">GET /v1/models</code> — Standard OpenAI compatible models list endpoint</div>
+          <div><code class="text-emerald-400">GET /api/models</code> — Detailed diagnostic and models registry endpoint</div>
+        </div>
         <p class="text-[11px] text-zinc-500 mt-2">Provider API keys (Atria, Unorouter, AIHubMix, Gemini) are stored securely server-side in backend environment variables. Clients only need any dummy key (e.g. <code class="text-emerald-400">antigravity-free</code>).</p>
       </div>
 
       <div>
-        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">2. cURL Example (Atria Dawn Preview or Unorouter)</h3>
-        <pre class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>curl /v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer antigravity-free" \
-  -d '{
-    "model": "Atria-Dawn-Preview",
-    "messages": [{"role": "user", "content": "hi"}]
-  }'</code></pre>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">2. Fetch Models (cURL)</h3>
+        <pre class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>curl -s http://localhost:3000/v1/models \
+  -H "Authorization: Bearer antigravity-free"</code></pre>
       </div>
 
       <div>
-        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">3. JavaScript / OpenAI SDK</h3>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">3. Fetch Models (JavaScript / OpenAI SDK)</h3>
         <pre class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -81,12 +79,21 @@ const openai = new OpenAI({
   baseURL: "/v1"
 });
 
-const response = await openai.chat.completions.create({
-  model: "Atria-Dawn-Preview",
-  messages: [{ role: "user", content: "hi" }],
-});
+const models = await openai.models.list();
+for await (const model of models) {
+  console.log(model.id);
+}</code></pre>
+      </div>
 
-console.log(response.choices[0].message.content);</code></pre>
+      <div>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">4. Chat Completion (Atria Dawn Preview)</h3>
+        <pre class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>curl /v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer antigravity-free" \
+  -d '{
+    "model": "Atria-Dawn-Preview",
+    "messages": [{"role": "user", "content": "hi"}]
+  }'</code></pre>
       </div>
     </div>
   </main>
