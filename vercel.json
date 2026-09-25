@@ -19,6 +19,18 @@
       "dest": "/api/models"
     },
     {
+      "src": "/models",
+      "dest": "/models.html"
+    },
+    {
+      "src": "/playground",
+      "dest": "/playground.html"
+    },
+    {
+      "src": "/docs",
+      "dest": "/docs.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

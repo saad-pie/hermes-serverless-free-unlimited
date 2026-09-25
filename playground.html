@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity // Playground</title>
+  <meta name="description" content="Zero-cost terminal playground for testing free models.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'JetBrains Mono', monospace; background-color: #000000; color: #f4f4f5; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #27272a; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
+
+  <!-- Minimalist Header -->
+  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
+        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+        <span>ANTIGRAVITY_ROUTER</span>
+      </a>
+      <nav class="flex items-center space-x-6 text-xs">
+        <a href="/" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
+        <a href="/models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
+        <a href="/playground.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">PLAYGROUND</a>
+        <a href="/docs.html" class="text-zinc-500 hover:text-emerald-400 transition">DOCS</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-10 space-y-6 flex flex-col">
+    <div class="space-y-1">
+      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-zinc-100">Terminal Playground</h1>
+      <p class="text-xs text-zinc-500">Execute prompts through your zero-cost open router gateway.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
+      <!-- Controls -->
+      <div class="lg:col-span-1 border border-zinc-900 bg-black p-5 space-y-4 h-fit">
+        <div class="border-b border-zinc-900 pb-3 text-xs font-bold uppercase text-emerald-400">Config</div>
+        
+        <div>
+          <label class="block text-[10px] text-zinc-500 uppercase mb-1.5">Model</label>
+          <select id="pg-model-select" class="w-full bg-black border border-zinc-800 p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-zinc-500 uppercase mb-1.5">System Prompt</label>
+          <textarea id="pg-system" rows="3" class="w-full bg-black border border-zinc-800 p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">You are an elite AI assistant on Antigravity Free Open Router.</textarea>
+        </div>
+
+        <button onclick="sendPlaygroundMessage()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold py-3 text-xs tracking-widest uppercase transition">
+          EXECUTE
+        </button>
+      </div>
+
+      <!-- Chat Box -->
+      <div class="lg:col-span-3 border border-zinc-900 bg-black flex flex-col h-[600px]">
+        <div class="border-b border-zinc-900 px-5 py-3.5 flex items-center justify-between text-xs">
+          <span class="text-zinc-400 uppercase tracking-wider">Stream Output</span>
+          <button onclick="clearChat()" class="text-zinc-600 hover:text-emerald-400 transition">RESET</button>
+        </div>
+
+        <div id="chat-messages" class="flex-1 p-5 overflow-y-auto space-y-4 text-xs">
+          <div class="text-center text-zinc-700 my-auto py-20 uppercase tracking-wider">Ready for execution.</div>
+        </div>
+
+        <div class="p-4 border-t border-zinc-900 bg-black flex space-x-2">
+          <input type="text" id="pg-user-input" onkeydown="if(event.key==='Enter')sendPlaygroundMessage()" placeholder="Type prompt..." class="flex-1 bg-black border border-zinc-800 px-4 py-3 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+          <button onclick="sendPlaygroundMessage()" class="bg-zinc-900 border border-zinc-800 text-zinc-200 px-5 hover:border-emerald-500 transition"><i class="fa-solid fa-arrow-up"></i></button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest">
+    ANTIGRAVITY // PLAYGROUND
+  </footer>
+
+  <script>
+    let chatHistory = [];
+
+    async function loadModels() {
+      try {
+        const res = await fetch('/api/models');
+        const data = await res.json();
+        if (data && data.data) {
+          const select = document.getElementById('pg-model-select');
+          select.innerHTML = data.data.map(m => `<option value="${m.id}">${m.id} [${m.provider || 'general'}]</option>`).join('');
+        }
+      } catch (_) {}
+    }
+
+    function clearChat() {
+      chatHistory = [];
+      document.getElementById('chat-messages').innerHTML = `<div class="text-center text-zinc-700 my-auto py-20 uppercase tracking-wider">Ready for execution.</div>`;
+    }
+
+    async function sendPlaygroundMessage() {
+      const inputEl = document.getElementById('pg-user-input');
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      const model = document.getElementById('pg-model-select').value;
+      const systemPrompt = document.getElementById('pg-system').value.trim();
+
+      inputEl.value = '';
+      if (chatHistory.length === 0) document.getElementById('chat-messages').innerHTML = '';
+      if (systemPrompt && chatHistory.length === 0) chatHistory.push({ role: "system", content: systemPrompt });
+
+      chatHistory.push({ role: "user", content: text });
+      appendMessage('user', text);
+
+      const msgId = 'msg-' + Date.now();
+      appendMessage('assistant', '<span class="text-emerald-400 animate-pulse">Routing...</span>', msgId);
+
+      try {
+        const res = await fetch('/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer antigravity-free' },
+          body: JSON.stringify({ model, messages: chatHistory })
+        });
+        const data = await res.json();
+        if (data.choices && data.choices[0]) {
+          const reply = data.choices[0].message.content;
+          chatHistory.push({ role: "assistant", content: reply });
+          document.getElementById(msgId).innerText = reply;
+        } else {
+          document.getElementById(msgId).innerText = JSON.stringify(data);
+        }
+      } catch (e) {
+        document.getElementById(msgId).innerText = `Error: ${e.message}`;
+      }
+    }
+
+    function appendMessage(role, html, id='') {
+      const box = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+      div.innerHTML = `
+        <div class="max-w-[85%] border ${role === 'user' ? 'border-emerald-500/50 bg-emerald-500 text-black font-bold' : 'border-zinc-800 bg-black text-zinc-300'} p-3.5">
+          <div ${id ? `id="${id}"` : ''} class="whitespace-pre-wrap">${html}</div>
+        </div>
+      `;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    loadModels();
+  </script>
+</body>
+</html>

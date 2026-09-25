@@ -99,10 +99,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Full Page Routes
+app.get('/models', (req, res) => {
+  res.sendFile(path.join(__dirname, 'models.html'));
+});
+app.get('/playground', (req, res) => {
+  res.sendFile(path.join(__dirname, 'playground.html'));
+});
+app.get('/docs', (req, res) => {
+  res.sendFile(path.join(__dirname, 'docs.html'));
+});
+
 // Static files
 app.use(express.static(__dirname));
 
-// Fallback to index.html for client-side navigation
+// Fallback to index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

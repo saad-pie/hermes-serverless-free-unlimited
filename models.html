@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity // Models</title>
+  <meta name="description" content="Verified zero-cost model registry across all active free pools.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'JetBrains Mono', monospace; background-color: #000000; color: #f4f4f5; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #27272a; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
+
+  <!-- Minimalist Header -->
+  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
+        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+        <span>ANTIGRAVITY_ROUTER</span>
+      </a>
+      <nav class="flex items-center space-x-6 text-xs">
+        <a href="/" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
+        <a href="/models.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">MODELS</a>
+        <a href="/playground.html" class="text-zinc-500 hover:text-emerald-400 transition">PLAYGROUND</a>
+        <a href="/docs.html" class="text-zinc-500 hover:text-emerald-400 transition">DOCS</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-12 space-y-8">
+    <div class="space-y-2">
+      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-zinc-100">Model Registry</h1>
+      <p class="text-xs text-zinc-500">Live verified zero-cost models across pooled providers.</p>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between border border-zinc-900 bg-black p-4">
+      <div class="relative flex-1">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-zinc-600 text-xs"></i>
+        <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models..." class="w-full bg-black border border-zinc-800 pl-10 pr-4 py-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+      </div>
+      <div id="provider-filters" class="flex flex-wrap gap-1.5 text-xs">
+        <button onclick="filterProvider('all')" id="filter-btn-all" class="px-3 py-2 font-bold bg-emerald-500 text-black">ALL</button>
+        <button onclick="filterProvider('google')" id="filter-btn-google" class="px-3 py-2 bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200">GOOGLE</button>
+        <button onclick="filterProvider('unorouter')" id="filter-btn-unorouter" class="px-3 py-2 bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200">UNOROUTER</button>
+        <button onclick="filterProvider('aihubmix')" id="filter-btn-aihubmix" class="px-3 py-2 bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200">AIHUBMIX</button>
+        <button onclick="filterProvider('jankrouter')" id="filter-btn-jankrouter" class="px-3 py-2 bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200">JANKROUTER</button>
+        <button onclick="filterProvider('freeaixyz')" id="filter-btn-freeaixyz" class="px-3 py-2 bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200">FREEAIXYZ</button>
+        <button onclick="filterProvider('osaii')" id="filter-btn-osaii" class="px-3 py-2 bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200">OSAII</button>
+      </div>
+    </div>
+
+    <!-- Models Grid -->
+    <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="col-span-full py-20 text-center text-zinc-600 text-xs uppercase">Loading models registry...</div>
+    </div>
+  </main>
+
+  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest">
+    ANTIGRAVITY // MODELS REGISTRY
+  </footer>
+
+  <script>
+    let globalModels = [];
+    let activeProviderFilter = 'all';
+
+    async function fetchModels() {
+      try {
+        const res = await fetch('/api/models');
+        const data = await res.json();
+        if (data && data.data) {
+          globalModels = data.data;
+          renderModels(globalModels);
+        }
+      } catch (e) {
+        document.getElementById('models-grid').innerHTML = `<div class="col-span-full py-16 text-center text-red-400 text-xs">Error loading models: ${e.message}</div>`;
+      }
+    }
+
+    function filterProvider(p) {
+      activeProviderFilter = p;
+      ['all', 'google', 'unorouter', 'aihubmix', 'jankrouter', 'freeaixyz', 'osaii'].forEach(prov => {
+        const btn = document.getElementById(`filter-btn-${prov}`);
+        if (!btn) return;
+        if (prov === p) {
+          btn.className = 'px-3 py-2 font-bold bg-emerald-500 text-black';
+        } else {
+          btn.className = 'px-3 py-2 bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200';
+        }
+      });
+      renderModels(globalModels);
+    }
+
+    function renderModels(models) {
+      const grid = document.getElementById('models-grid');
+      const query = document.getElementById('model-search').value.toLowerCase();
+      
+      const filtered = models.filter(m => {
+        const matchesQuery = m.id.toLowerCase().includes(query);
+        const matchesProvider = activeProviderFilter === 'all' || (m.provider || '').toLowerCase() === activeProviderFilter;
+        return matchesQuery && matchesProvider;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-16 text-center text-zinc-600 text-xs uppercase">No models found.</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(m => `
+        <div class="border border-zinc-900 bg-black p-5 flex flex-col justify-between hover:border-emerald-500/50 transition">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-[9px] border border-zinc-800 px-2 py-0.5 uppercase tracking-wider text-emerald-400">${m.provider || 'google'}</span>
+              <span class="text-[9px] text-emerald-400 font-bold">100% FREE</span>
+            </div>
+            <h3 class="font-bold text-xs text-zinc-200 mb-2 truncate" title="${m.id}">${m.id}</h3>
+          </div>
+          <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900">
+              <div class="text-zinc-600">RPM</div>
+              <div class="text-zinc-300 font-bold">${m.rpm}</div>
+            </div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900">
+              <div class="text-zinc-600">TPM</div>
+              <div class="text-zinc-300 font-bold">${(m.tpm / 1000).toFixed(0)}k</div>
+            </div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900">
+              <div class="text-zinc-600">RPD</div>
+              <div class="text-zinc-300 font-bold">${m.rpd}</div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterModels() {
+      renderModels(globalModels);
+    }
+
+    fetchModels();
+  </script>
+</body>
+</html>

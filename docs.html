@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity // Docs</title>
+  <meta name="description" content="OpenAI compatible API integration documentation.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'JetBrains Mono', monospace; background-color: #000000; color: #f4f4f5; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: #27272a; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
+
+  <!-- Minimalist Header -->
+  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
+        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+        <span>ANTIGRAVITY_ROUTER</span>
+      </a>
+      <nav class="flex items-center space-x-6 text-xs">
+        <a href="/" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
+        <a href="/models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
+        <a href="/playground.html" class="text-zinc-500 hover:text-emerald-400 transition">PLAYGROUND</a>
+        <a href="/docs.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">DOCS</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-4xl w-full mx-auto px-6 py-12 space-y-8">
+    <div class="space-y-2">
+      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-emerald-400">API Documentation</h1>
+      <p class="text-xs text-zinc-500">Drop-in OpenAI compatible zero-cost API endpoint integration.</p>
+    </div>
+
+    <div class="border border-zinc-900 bg-black p-6 space-y-6 text-xs">
+      <div>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">1. Base Endpoint</h3>
+        <div class="bg-zinc-950 p-3 border border-zinc-900 text-emerald-400 font-mono select-all">/v1</div>
+      </div>
+
+      <div>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">2. cURL Example</h3>
+        <pre class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>curl /v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ANY_KEY" \
+  -d '{
+    "model": "gemini-2.5-flash",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'</code></pre>
+      </div>
+
+      <div>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">3. JavaScript / OpenAI SDK</h3>
+        <pre class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: "any-key",
+  baseURL: "/v1"
+});
+
+const response = await openai.chat.completions.create({
+  model: "gemini-2.5-flash",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+
+console.log(response.choices[0].message.content);</code></pre>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest">
+    ANTIGRAVITY // DOCS
+  </footer>
+</body>
+</html>
