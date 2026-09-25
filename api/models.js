@@ -246,10 +246,19 @@ export default async function handler(req) {
         } catch (_) {
           providerStats.jankrouter.status = 'error_or_timeout';
         }
-        return { models: [], workingKeys: 0 };
+        const fallbackJank = ['qwen3-guard-8b', 'qwen3.8-27b', 'qwen3.8-flash', 'nemotron-3.5-lightning-30b', 'north-mini-code', 'glm-4.6v-flash', 'glm-5.3-flash', 'gpt-5.6-luna', 'deepseek-v4-flash-0731', 'gemma-4-26b-a4b', 'moondream-3.1'].map(id => ({
+          id: id,
+          provider: 'jankrouter',
+          rpm: 30,
+          tpm: 100000,
+          rpd: 1000
+        }));
+        providerStats.jankrouter.models_count = fallbackJank.length;
+        providerStats.jankrouter.status = 'fallback_active';
+        return { models: fallbackJank, workingKeys: 0 };
       })(),
 
-      // 5. Fetch FreeAIXYZ Models
+      // 5. Fetch FreeAIXYZ Models (with fallback keyless models)
       (async () => {
         try {
           const freeaiRes = await fetchWithTimeout('https://freeaixyz4all.vercel.app/api/v1/models', {
@@ -259,7 +268,7 @@ export default async function handler(req) {
           if (freeaiRes.ok) {
             const freeaiData = await freeaiRes.json();
             const modelsList = freeaiData.data || freeaiData.models || freeaiData;
-            if (Array.isArray(modelsList)) {
+            if (Array.isArray(modelsList) && modelsList.length > 0) {
               const freeaiModels = modelsList
                 .filter(m => {
                   const modelId = typeof m === 'string' ? m : (m.id || '');
@@ -275,14 +284,25 @@ export default async function handler(req) {
                     rpd: 2000
                   };
                 });
-              providerStats.freeaixyz.models_count = freeaiModels.length;
-              return { models: freeaiModels, workingKeys: 0 };
+              if (freeaiModels.length > 0) {
+                providerStats.freeaixyz.models_count = freeaiModels.length;
+                return { models: freeaiModels, workingKeys: 0 };
+              }
             }
           }
         } catch (_) {
           providerStats.freeaixyz.status = 'error_or_timeout';
         }
-        return { models: [], workingKeys: 0 };
+        const fallbackFreeai = ['freeai-gemini-2.5-flash', 'freeai-gpt-4o-mini', 'freeai-claude-3-haiku', 'freeai-deepseek-chat'].map(id => ({
+          id: id,
+          provider: 'freeaixyz',
+          rpm: 50,
+          tpm: 200000,
+          rpd: 2000
+        }));
+        providerStats.freeaixyz.models_count = fallbackFreeai.length;
+        providerStats.freeaixyz.status = 'fallback_active';
+        return { models: fallbackFreeai, workingKeys: 0 };
       })(),
 
       // 6. Fetch OSAII Free Models
@@ -322,7 +342,16 @@ export default async function handler(req) {
         } catch (_) {
           providerStats.osaii.status = 'error_or_timeout';
         }
-        return { models: [], workingKeys: 0 };
+        const fallbackOsaii = ['fast', 'smart', 'mini', 'poolside/laguna-xs-2.1', 'poolside/laguna-s-2.1', 'microsoft/bitnet-b1.58-2B-4T'].map(id => ({
+          id: id,
+          provider: 'osaii',
+          rpm: rawOsaiiKey ? 100 : 30,
+          tpm: 500000,
+          rpd: 5000
+        }));
+        providerStats.osaii.models_count = fallbackOsaii.length;
+        providerStats.osaii.status = 'fallback_active';
+        return { models: fallbackOsaii, workingKeys: rawOsaiiKey ? 1 : 0 };
       })()
     ]);
 

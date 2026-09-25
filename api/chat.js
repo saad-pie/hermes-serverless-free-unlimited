@@ -44,6 +44,9 @@ const JANK_MODELS = [
   'gemma-4-26b-a4b', 'gemma-4-26b-a4b-it', 'gemma-4-26b', 'gemma-26b', 'diffusiongemma', 'moondream-3.1'
 ];
 
+// FreeAIXYZ specific models mapping
+const FREEAI_MODELS = ['freeai-gemini-2.5-flash', 'freeai-gpt-4o-mini', 'freeai-claude-3-haiku', 'freeai-deepseek-chat'];
+
 // OSAII specific models mapping
 const OSAII_MODELS = [
   'fast', 'smart', 'mini', 'poolside/laguna-xs-2.1', 'poolside/laguna-s-2.1', 'microsoft/bitnet-b1.58-2b-4t'
@@ -96,6 +99,9 @@ export default async function handler(req) {
       targetUrl = 'https://api.unorouter.com/v1/chat/completions';
     } else if (JANK_MODELS.some(m => modelName.includes(m))) {
       targetUrl = 'http://jankrouter.waifly.com/v1/chat/completions';
+      isKeyless = true;
+    } else if (FREEAI_MODELS.some(m => modelName.includes(m)) || modelName.includes('freeai')) {
+      targetUrl = 'https://freeaixyz4all.vercel.app/api/v1/chat/completions';
       isKeyless = true;
     } else if (OSAII_MODELS.some(m => modelName.includes(m)) || modelName.includes('poolside/') || modelName.includes('bitnet')) {
       targetUrl = 'https://osaii.wyvernhub.net/api/v1/chat/completions';
