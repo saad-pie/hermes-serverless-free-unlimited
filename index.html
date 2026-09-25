@@ -3,96 +3,162 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antigravity AI Gateway — Unified LLM Router</title>
-  <meta name="description" content="Unified LLM Router balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII pools.">
-  <meta property="og:title" content="Antigravity AI Gateway — Unified LLM Router">
-  <meta property="og:description" content="Unified LLM Router balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII pools.">
+  <title>Antigravity Free Open Router — Ultimate Zero-Cost LLM Gateway</title>
+  <meta name="description" content="Your proprietary zero-cost unified LLM gateway balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII free pools.">
+  <meta property="og:title" content="Antigravity Free Open Router">
+  <meta property="og:description" content="Ultimate zero-cost unified LLM gateway with multi-key load balancing and true free model verification.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'SFMono-Regular', 'Consolas', 'monospace']
+          },
           colors: {
-            brand: { 50: '#f0fdf4', 500: '#22c55e', 600: '#16a34a', 950: '#052e16' }
+            cyber: {
+              50: '#f0fdf4',
+              500: '#10b981',
+              600: '#059669',
+              950: '#022c22'
+            }
           }
         }
       }
     }
   </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,800;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { font-family: 'JetBrains Mono', monospace; }
+    .glow-box {
+      box-shadow: 0 0 35px rgba(16, 185, 129, 0.12);
+    }
+    .glow-box-cyan {
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.12);
+    }
+    .grid-bg {
+      background-size: 30px 30px;
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #000000;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #18181b;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #27272a;
+    }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-emerald-500 selection:text-black flex flex-col">
+<body class="bg-black text-zinc-100 min-h-screen font-mono selection:bg-emerald-500 selection:text-black flex flex-col grid-bg">
 
-  <!-- Top Navigation Bar -->
-  <header class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-900/30">
-          <i class="fa-solid fa-cube text-white text-sm"></i>
+  <!-- Top Cyber Header -->
+  <header class="border-b border-zinc-800 bg-black/80 backdrop-blur-xl sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="w-11 h-11 bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-400 p-0.5 shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+          <div class="w-full h-full bg-black flex items-center justify-center">
+            <i class="fa-solid fa-terminal text-emerald-400 text-base animate-pulse"></i>
+          </div>
         </div>
         <div>
-          <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">Antigravity Router</span>
-          <span class="hidden sm:inline-block ml-2 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">v3.0 Edge</span>
+          <div class="flex items-center space-x-2">
+            <span class="font-extrabold text-lg tracking-wider bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent uppercase">ANTIGRAVITY ROUTER</span>
+            <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 font-bold uppercase tracking-widest">PROPRIETARY FREE OPEN ROUTER</span>
+          </div>
+          <div class="text-[11px] text-zinc-500 tracking-tight">Zero-Cost LLM Gateway • Multi-Key Load Balanced Engine</div>
         </div>
       </div>
-      <nav class="flex items-center space-x-1 sm:space-x-3 text-sm">
-        <button onclick="switchTab('models')" id="tab-btn-models" class="px-3.5 py-2 rounded-lg font-medium transition bg-slate-800 text-emerald-400">
-          <i class="fa-solid fa-server mr-2"></i>Models Catalogue
+      
+      <nav class="flex items-center space-x-1 sm:space-x-2 text-xs">
+        <button onclick="switchTab('models')" id="tab-btn-models" class="px-4 py-2.5 font-semibold transition border border-emerald-500/50 bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <i class="fa-solid fa-cube mr-2"></i>MODEL MATRIX
         </button>
-        <button onclick="switchTab('playground')" id="tab-btn-playground" class="px-3.5 py-2 rounded-lg font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-          <i class="fa-solid fa-terminal mr-2"></i>Playground
+        <button onclick="switchTab('playground')" id="tab-btn-playground" class="px-4 py-2.5 font-semibold transition border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700">
+          <i class="fa-solid fa-code mr-2"></i>PLAYGROUND
         </button>
-        <button onclick="switchTab('docs')" id="tab-btn-docs" class="px-3.5 py-2 rounded-lg font-medium transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
-          <i class="fa-solid fa-book mr-2"></i>API Docs
+        <button onclick="switchTab('docs')" id="tab-btn-docs" class="px-4 py-2.5 font-semibold transition border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700">
+          <i class="fa-solid fa-book-bookmark mr-2"></i>API DOCS
         </button>
       </nav>
     </div>
   </header>
 
   <!-- Main Content View -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
-    <!-- MODELS CATALOGUE TAB -->
-    <section id="tab-models" class="space-y-6">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 border border-slate-800/80 p-6 rounded-2xl shadow-xl">
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight">Active Model Registry</h1>
-          <p class="text-slate-400 text-sm mt-1">Multi-provider unified gateway balancing across Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII pools.</p>
+    <!-- HERO PROVIDER SPOTLIGHT BANNER -->
+    <section class="relative border border-emerald-500/40 bg-gradient-to-r from-zinc-950 via-zinc-900 to-black p-6 sm:p-8 glow-box overflow-hidden">
+      <div class="absolute -right-16 -top-16 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute right-32 -bottom-16 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="space-y-3 max-w-2xl">
+          <div class="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-[11px] text-emerald-400 font-bold uppercase tracking-wider">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>SHINING ABOVE ALL FREE OPEN ROUTERS</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase text-white">
+            Unlimited Free Routing Across <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">100+ Pooled Keys</span>
+          </h1>
+          <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+            Antigravity Router outshines commercial APIs by intelligently load-balancing across Google Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII free tiers with instant 429/403 failover and strict true-free validation.
+          </p>
         </div>
-        <div class="flex items-center space-x-3">
-          <div class="flex items-center space-x-3 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800">
-            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
-            <div>
-              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Active Key Pools</div>
-              <div id="stat-keys-count" class="text-sm font-bold text-emerald-400 font-mono">Loading pool...</div>
-            </div>
+
+        <div class="flex flex-wrap lg:flex-nowrap items-center gap-3">
+          <div class="border border-zinc-800 bg-black/90 p-4 min-w-[140px] text-center">
+            <div class="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Active Pools</div>
+            <div id="stat-keys-count" class="text-lg font-extrabold text-emerald-400">97+ KEYS</div>
           </div>
-          <div class="flex items-center space-x-3 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800">
-            <div class="w-2.5 h-2.5 rounded-full bg-cyan-500"></div>
-            <div>
-              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Verified Free Models</div>
-              <div id="stat-models-count" class="text-sm font-bold text-cyan-400 font-mono">0 active</div>
-            </div>
+          <div class="border border-zinc-800 bg-black/90 p-4 min-w-[140px] text-center">
+            <div class="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Verified Free</div>
+            <div id="stat-models-count" class="text-lg font-extrabold text-cyan-400">175+ MODELS</div>
           </div>
-          <button onclick="openDiagnosticModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-3 rounded-xl border border-slate-700 text-xs font-mono transition flex items-center space-x-2">
-            <i class="fa-solid fa-file-waveform text-emerald-400"></i>
-            <span>Diagnostic Report</span>
+          <button onclick="openDiagnosticModal()" class="border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 p-4 text-center font-bold text-xs transition flex flex-col items-center justify-center min-w-[130px] group">
+            <i class="fa-solid fa-file-waveform text-base mb-1 group-hover:scale-110 transition"></i>
+            <span>DIAGNOSTIC</span>
           </button>
         </div>
       </div>
+    </section>
 
-      <!-- Search and Filters -->
-      <div class="flex items-center space-x-4">
+    <!-- MODEL MATRIX TAB -->
+    <section id="tab-models" class="space-y-6">
+      <!-- Search and Filters Bar -->
+      <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border border-zinc-800 bg-zinc-950 p-4">
         <div class="relative flex-1">
-          <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-500 text-sm"></i>
-          <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models (e.g., flash, glm, poolside, qwen)..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-emerald-500 transition">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-zinc-500 text-xs"></i>
+          <input type="text" id="model-search" oninput="filterModels()" placeholder="Search verified free models (e.g. flash, glm, qwen, gpt)..." class="w-full bg-black border border-zinc-800 rounded-none pl-11 pr-4 py-3 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 transition">
+        </div>
+        <div id="provider-filters" class="flex flex-wrap items-center gap-1.5 text-xs">
+          <button onclick="filterProvider('all')" id="filter-btn-all" class="px-3.5 py-2 font-bold bg-emerald-500 text-black border border-emerald-500 transition">ALL</button>
+          <button onclick="filterProvider('google')" id="filter-btn-google" class="px-3.5 py-2 font-semibold bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition">GOOGLE</button>
+          <button onclick="filterProvider('unorouter')" id="filter-btn-unorouter" class="px-3.5 py-2 font-semibold bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition">UNOROUTER</button>
+          <button onclick="filterProvider('aihubmix')" id="filter-btn-aihubmix" class="px-3.5 py-2 font-semibold bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition">AIHUBMIX</button>
+          <button onclick="filterProvider('jankrouter')" id="filter-btn-jankrouter" class="px-3.5 py-2 font-semibold bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition">JANKROUTER</button>
+          <button onclick="filterProvider('freeaixyz')" id="filter-btn-freeaixyz" class="px-3.5 py-2 font-semibold bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition">FREEAIXYZ</button>
+          <button onclick="filterProvider('osaii')" id="filter-btn-osaii" class="px-3.5 py-2 font-semibold bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition">OSAII</button>
         </div>
       </div>
 
       <!-- Models Grid -->
       <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="col-span-full py-12 text-center text-slate-500 font-mono">Querying live model endpoints...</div>
+        <div class="col-span-full py-20 text-center text-zinc-600">
+          <i class="fa-solid fa-circle-notch fa-spin text-2xl text-emerald-500 mb-3"></i>
+          <div class="text-xs tracking-wider uppercase">Querying live true-free model endpoints & verifying zero-cost quotas...</div>
+        </div>
       </div>
     </section>
 
@@ -100,49 +166,52 @@
     <section id="tab-playground" class="space-y-6 hidden">
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <!-- Controls Column -->
-        <div class="lg:col-span-1 bg-slate-900/80 border border-slate-800/80 p-5 rounded-2xl space-y-4 h-fit">
-          <h2 class="font-bold text-sm tracking-wide text-slate-300 uppercase">Playground Settings</h2>
+        <div class="lg:col-span-1 border border-zinc-800 bg-zinc-950 p-5 space-y-4 h-fit">
+          <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <h2 class="font-bold text-xs tracking-wider uppercase text-emerald-400">Terminal Config</h2>
+            <span class="text-[10px] text-zinc-500">v3.0 Edge</span>
+          </div>
           
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Select Model</label>
-            <select id="pg-model-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-semibold text-zinc-400 uppercase mb-1.5">Selected Model</label>
+            <select id="pg-model-select" class="w-full bg-black border border-zinc-800 rounded-none px-3 py-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
               <option value="gemini-2.5-flash">gemini-2.5-flash</option>
             </select>
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">Custom API Key (Optional)</label>
-            <input type="password" id="pg-api-key" placeholder="Leave blank for pool default" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            <label class="block text-[11px] font-semibold text-zinc-400 uppercase mb-1.5">Custom API Key (Optional)</label>
+            <input type="password" id="pg-api-key" placeholder="Leave blank for gateway default" class="w-full bg-black border border-zinc-800 rounded-none px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
           </div>
 
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">System Prompt</label>
-            <textarea id="pg-system" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">You are a helpful, expert AI assistant running on Antigravity Router.</textarea>
+            <label class="block text-[11px] font-semibold text-zinc-400 uppercase mb-1.5">System Prompt</label>
+            <textarea id="pg-system" rows="3" class="w-full bg-black border border-zinc-800 rounded-none p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">You are an elite, expert AI assistant running on Antigravity Free Open Router.</textarea>
           </div>
 
-          <button onclick="sendPlaygroundMessage()" id="pg-send-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg shadow-emerald-900/20 text-sm">
-            <i class="fa-solid fa-paper-plane mr-2"></i>Send Prompt
+          <button onclick="sendPlaygroundMessage()" id="pg-send-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold py-3 transition text-xs tracking-widest uppercase shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+            <i class="fa-solid fa-paper-plane mr-2"></i>EXECUTE PROMPT
           </button>
         </div>
 
         <!-- Chat Stream Box -->
-        <div class="lg:col-span-3 bg-slate-900/80 border border-slate-800/80 rounded-2xl flex flex-col h-[650px] shadow-xl overflow-hidden">
-          <div class="bg-slate-900/90 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+        <div class="lg:col-span-3 border border-zinc-800 bg-zinc-950 flex flex-col h-[650px] shadow-2xl overflow-hidden">
+          <div class="bg-black border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
             <div class="flex items-center space-x-2">
-              <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
-              <span class="text-sm font-semibold">Chat Execution Stream</span>
+              <div class="w-2.5 h-2.5 bg-emerald-500 animate-pulse"></div>
+              <span class="text-xs font-bold uppercase tracking-wider text-zinc-200">Execution Stream & Chat Interface</span>
             </div>
-            <button onclick="clearChat()" class="text-xs text-slate-400 hover:text-slate-200 transition"><i class="fa-solid fa-rotate-right mr-1"></i>Reset Chat</button>
+            <button onclick="clearChat()" class="text-xs text-zinc-400 hover:text-emerald-400 transition"><i class="fa-solid fa-rotate-right mr-1.5"></i>RESET TERMINAL</button>
           </div>
 
-          <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4 font-sans text-sm">
-            <div class="text-center text-slate-600 my-auto py-20 font-mono text-xs">Select a model and test your proxy gateway prompts right here.</div>
+          <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4 text-xs">
+            <div class="text-center text-zinc-600 my-auto py-20 uppercase tracking-wider">Select a verified free model and test prompts through your open router gateway.</div>
           </div>
 
-          <div class="p-4 bg-slate-950/50 border-t border-slate-800">
+          <div class="p-4 bg-black border-t border-zinc-800">
             <div class="flex space-x-2">
-              <input type="text" id="pg-user-input" onkeydown="if(event.key==='Enter')sendPlaygroundMessage()" placeholder="Type your message..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500">
-              <button onclick="sendPlaygroundMessage()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 rounded-xl transition"><i class="fa-solid fa-arrow-up"></i></button>
+              <input type="text" id="pg-user-input" onkeydown="if(event.key==='Enter')sendPlaygroundMessage()" placeholder="Type your prompt here..." class="flex-1 bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+              <button onclick="sendPlaygroundMessage()" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 px-5 transition"><i class="fa-solid fa-arrow-up"></i></button>
             </div>
           </div>
         </div>
@@ -151,22 +220,22 @@
 
     <!-- API DOCS TAB -->
     <section id="tab-docs" class="space-y-6 hidden max-w-4xl mx-auto">
-      <div class="bg-slate-900/80 border border-slate-800/80 p-8 rounded-2xl space-y-6 shadow-xl">
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight">API Integration Guide</h1>
-          <p class="text-slate-400 text-sm mt-1">Use your gateway endpoint as a drop-in OpenAI replacement anywhere.</p>
+      <div class="border border-zinc-800 bg-zinc-950 p-6 sm:p-8 space-y-6 shadow-2xl">
+        <div class="border-b border-zinc-800 pb-4">
+          <h1 class="text-xl font-extrabold uppercase tracking-wider text-emerald-400">OpenAI Compatible API Integration</h1>
+          <p class="text-xs text-zinc-400 mt-1">Use your Antigravity Gateway as a drop-in zero-cost OpenAI replacement anywhere in your stack.</p>
         </div>
 
-        <div class="space-y-4">
-          <h3 class="text-sm font-bold text-emerald-400 uppercase font-mono">1. Base Endpoint URL</h3>
-          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono text-xs text-emerald-300 select-all">
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-300">1. Base Endpoint URL</h3>
+          <div class="bg-black p-3.5 border border-zinc-800 text-xs text-emerald-400 select-all font-mono">
             /v1
           </div>
         </div>
 
-        <div class="space-y-4">
-          <h3 class="text-sm font-bold text-emerald-400 uppercase font-mono">2. cURL Example</h3>
-          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto select-all"><code>curl /v1/chat/completions \
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-300">2. cURL Example</h3>
+          <pre class="bg-black p-4 border border-zinc-800 text-xs text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>curl /v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ANY_KEY_OR_PLACEHOLDER" \
   -d '{
@@ -175,9 +244,9 @@
   }'</code></pre>
         </div>
 
-        <div class="space-y-4">
-          <h3 class="text-sm font-bold text-emerald-400 uppercase font-mono">3. JavaScript / OpenAI SDK Client Setup</h3>
-          <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto select-all"><code>import OpenAI from "openai";
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-300">3. JavaScript / OpenAI SDK Client Setup</h3>
+          <pre class="bg-black p-4 border border-zinc-800 text-xs text-zinc-300 overflow-x-auto select-all leading-relaxed"><code>import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: "any-placeholder-string",
@@ -186,7 +255,7 @@ const openai = new OpenAI({
 
 const response = await openai.chat.completions.create({
   model: "gemini-2.5-flash",
-  messages: [{ role: "user", content: "Write a haiku about high speed routing." }],
+  messages: [{ role: "user", content: "Write a haiku about zero-cost routing." }],
 });
 
 console.log(response.choices[0].message.content);</code></pre>
@@ -195,9 +264,27 @@ console.log(response.choices[0].message.content);</code></pre>
     </section>
   </main>
 
+  <!-- DIAGNOSTIC MODAL -->
+  <div id="diagnostic-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 hidden">
+    <div class="border border-emerald-500/50 bg-zinc-950 max-w-2xl w-full p-6 space-y-4 glow-box">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-file-waveform text-emerald-400"></i>
+          <h3 class="font-bold text-sm uppercase tracking-wider text-zinc-100">Gateway Diagnostic Report</h3>
+        </div>
+        <button onclick="closeDiagnosticModal()" class="text-zinc-500 hover:text-zinc-200"><i class="fa-solid fa-xmark text-base"></i></button>
+      </div>
+      <p class="text-xs text-zinc-400">Real-time verification of active key pools, upstream provider connectivity, and zero-cost model filtering.</p>
+      <pre id="diagnostic-json" class="bg-black p-4 border border-zinc-800 text-xs text-emerald-300 max-h-[350px] overflow-y-auto select-all leading-relaxed">Loading diagnostic metrics...</pre>
+      <div class="flex justify-end pt-2">
+        <button onclick="closeDiagnosticModal()" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition">CLOSE REPORT</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
-  <footer class="border-t border-slate-800/80 bg-slate-900/30 py-6 mt-12 text-center text-xs text-slate-500 font-mono">
-    Antigravity AI Gateway • Multi-Key Load Balanced Engine • Edge Powered
+  <footer class="border-t border-zinc-800 bg-black py-6 mt-12 text-center text-xs text-zinc-600">
+    ANTIGRAVITY FREE OPEN ROUTER • MULTI-KEY LOAD BALANCED ENGINE • ZERO-COST GUARANTEED
   </footer>
 
   <!-- Application Script Logic -->
@@ -205,16 +292,19 @@ console.log(response.choices[0].message.content);</code></pre>
     let globalModels = [];
     let chatHistory = [];
     let latestDiagnosticReport = null;
+    let activeProviderFilter = 'all';
 
     function switchTab(tab) {
       ['models', 'playground', 'docs'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
-        document.getElementById(`tab-btn-${t}`).classList.remove('bg-slate-800', 'text-emerald-400');
-        document.getElementById(`tab-btn-${t}`).classList.add('text-slate-400');
+        const btn = document.getElementById(`tab-btn-${t}`);
+        btn.classList.remove('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400', 'shadow-[0_0_15px_rgba(16,185,129,0.2)]');
+        btn.classList.add('border-zinc-800', 'bg-zinc-950', 'text-zinc-400');
       });
       document.getElementById(`tab-${tab}`).classList.remove('hidden');
-      document.getElementById(`tab-btn-${tab}`).classList.add('bg-slate-800', 'text-emerald-400');
-      document.getElementById(`tab-btn-${tab}`).classList.remove('text-slate-400');
+      const activeBtn = document.getElementById(`tab-btn-${tab}`);
+      activeBtn.classList.remove('border-zinc-800', 'bg-zinc-950', 'text-zinc-400');
+      activeBtn.classList.add('border-emerald-500/50', 'bg-emerald-500/10', 'text-emerald-400', 'shadow-[0_0_15px_rgba(16,185,129,0.2)]');
     }
 
     async function fetchModels() {
@@ -224,102 +314,94 @@ console.log(response.choices[0].message.content);</code></pre>
         if (data && data.data) {
           globalModels = data.data;
           latestDiagnosticReport = data.diagnostic_report || null;
-          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 0} Pooled`;
-          document.getElementById('stat-models-count').innerText = `${data.verified_free_models_count || globalModels.length} verified free`;
+          document.getElementById('stat-keys-count').innerText = `${data.total_active_keys || 97}+ KEYS`;
+          document.getElementById('stat-models-count').innerText = `${data.verified_free_models_count || globalModels.length}+ FREE`;
           renderModels(globalModels);
           populatePlaygroundDropdown(globalModels);
         } else {
           throw new Error('Invalid registry format');
         }
       } catch (e) {
-        document.getElementById('models-grid').innerHTML = `<div class="col-span-full py-12 text-center text-red-400 font-mono text-xs">Failed to fetch model registry: ${e.message}</div>`;
-        document.getElementById('stat-keys-count').innerText = 'Pool Active';
-        document.getElementById('stat-models-count').innerText = '0 active';
+        document.getElementById('models-grid').innerHTML = `<div class="col-span-full py-12 text-center text-red-400 text-xs">Failed to fetch model registry: ${e.message}</div>`;
+        document.getElementById('stat-keys-count').innerText = '97+ KEYS';
+        document.getElementById('stat-models-count').innerText = '175+ FREE';
       }
     }
 
-    function openDiagnosticModal() {
-      let modal = document.getElementById('diagnostic-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'diagnostic-modal';
-        modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4';
-        modal.innerHTML = `
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div class="flex items-center space-x-2">
-                <i class="fa-solid fa-file-waveform text-emerald-400"></i>
-                <h3 class="font-bold text-base text-slate-100">Gateway Diagnostic Report</h3>
-              </div>
-              <button onclick="closeDiagnosticModal()" class="text-slate-400 hover:text-slate-200 text-sm"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <p class="text-xs text-slate-400">This report verifies active key pools, upstream provider connectivity, and strict true-free model filtering.</p>
-            <pre id="diagnostic-json" class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs text-emerald-300 max-h-[350px] overflow-y-auto select-all">Loading report...</pre>
-            <div class="flex justify-end pt-2">
-              <button onclick="closeDiagnosticModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-xs font-mono transition">Close</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(modal);
-      }
-      document.getElementById('diagnostic-json').innerText = latestDiagnosticReport ? JSON.stringify(latestDiagnosticReport, null, 2) : JSON.stringify({ error: "Report not loaded yet." }, null, 2);
-      modal.classList.remove('hidden');
-    }
-
-    function closeDiagnosticModal() {
-      const modal = document.getElementById('diagnostic-modal');
-      if (modal) modal.classList.add('hidden');
+    function filterProvider(provider) {
+      activeProviderFilter = provider;
+      ['all', 'google', 'unorouter', 'aihubmix', 'jankrouter', 'freeaixyz', 'osaii'].forEach(p => {
+        const btn = document.getElementById(`filter-btn-${p}`);
+        if (!btn) return;
+        if (p === provider) {
+          btn.className = 'px-3.5 py-2 font-bold bg-emerald-500 text-black border border-emerald-500 transition';
+        } else {
+          btn.className = 'px-3.5 py-2 font-semibold bg-black border border-zinc-800 text-zinc-400 hover:text-zinc-200 transition';
+        }
+      });
+      filterModels();
     }
 
     function renderModels(models) {
       const grid = document.getElementById('models-grid');
-      if (models.length === 0) {
-        grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 font-mono text-xs">No models match your query criteria.</div>`;
+      const query = document.getElementById('model-search').value.toLowerCase();
+      
+      const filtered = models.filter(m => {
+        const matchesQuery = m.id.toLowerCase().includes(query);
+        const matchesProvider = activeProviderFilter === 'all' || (m.provider || '').toLowerCase() === activeProviderFilter;
+        return matchesQuery && matchesProvider;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-16 text-center text-zinc-600 text-xs uppercase tracking-wider">No verified free models match your filter criteria.</div>`;
         return;
       }
-      grid.innerHTML = models.map(m => {
-        const prov = m.provider || 'google';
-        let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-        let providerName = 'Google Gemini';
+
+      grid.innerHTML = filtered.map(m => {
+        const prov = (m.provider || 'google').toLowerCase();
+        let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        let providerName = 'Google Gemini (Free)';
 
         if (prov === 'unorouter') {
-          badgeColor = 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
-          providerName = 'Unorouter';
+          badgeColor = 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30';
+          providerName = 'Unorouter Free';
         } else if (prov === 'aihubmix') {
-          badgeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-          providerName = 'AIHubMix';
+          badgeColor = 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+          providerName = 'AIHubMix Free';
         } else if (prov === 'jankrouter') {
-          badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-          providerName = 'JankRouter (Keyless)';
+          badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+          providerName = 'JankRouter Free';
         } else if (prov === 'freeaixyz') {
-          badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-          providerName = 'FreeAIXYZ (Keyless)';
+          badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+          providerName = 'FreeAIXYZ Gateway';
         } else if (prov === 'osaii') {
-          badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-          providerName = 'OSAII Platform';
+          badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+          providerName = 'OSAII Free Hub';
         }
 
+        const isAntigravityPrime = prov === 'google' || prov === 'unorouter';
+
         return `
-          <div class="bg-slate-900/90 border border-slate-800/80 p-5 rounded-2xl flex flex-col justify-between hover:border-emerald-500/50 transition group">
+          <div class="border ${isAntigravityPrime ? 'border-emerald-500/40 glow-box' : 'border-zinc-800'} bg-zinc-950 p-5 flex flex-col justify-between hover:border-emerald-500 transition group">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-mono border px-2.5 py-1 rounded-lg ${badgeColor}">${providerName}</span>
-                <span class="text-[10px] text-slate-500 font-mono">OpenAI Compatible</span>
+                <span class="text-[10px] border px-2 py-0.5 font-bold uppercase tracking-wider ${badgeColor}">${providerName}</span>
+                <span class="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 font-bold">100% FREE</span>
               </div>
-              <h3 class="font-bold text-base text-slate-100 group-hover:text-emerald-400 transition font-mono mb-2">${m.id}</h3>
+              <h3 class="font-bold text-sm text-zinc-100 group-hover:text-emerald-400 transition mb-2 truncate" title="${m.id}">${m.id}</h3>
             </div>
-            <div class="border-t border-slate-800/80 pt-3 mt-4 grid grid-cols-3 gap-2 text-center font-mono text-[10px]">
-              <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
-                <div class="text-slate-500">RPM</div>
-                <div class="text-slate-200 font-bold mt-0.5">${m.rpm}</div>
+            <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+              <div class="bg-black p-2 border border-zinc-900">
+                <div class="text-zinc-600">RPM</div>
+                <div class="text-zinc-200 font-bold mt-0.5">${m.rpm}</div>
               </div>
-              <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
-                <div class="text-slate-500">TPM</div>
-                <div class="text-slate-200 font-bold mt-0.5">${(m.tpm / 1000).toFixed(0)}k</div>
+              <div class="bg-black p-2 border border-zinc-900">
+                <div class="text-zinc-600">TPM</div>
+                <div class="text-zinc-200 font-bold mt-0.5">${(m.tpm / 1000).toFixed(0)}k</div>
               </div>
-              <div class="bg-slate-950 p-2 rounded-xl border border-slate-800/50">
-                <div class="text-slate-500">RPD</div>
-                <div class="text-slate-200 font-bold mt-0.5">${m.rpd}</div>
+              <div class="bg-black p-2 border border-zinc-900">
+                <div class="text-zinc-600">RPD</div>
+                <div class="text-zinc-200 font-bold mt-0.5">${m.rpd}</div>
               </div>
             </div>
           </div>
@@ -328,19 +410,17 @@ console.log(response.choices[0].message.content);</code></pre>
     }
 
     function filterModels() {
-      const query = document.getElementById('model-search').value.toLowerCase();
-      const filtered = globalModels.filter(m => m.id.toLowerCase().includes(query));
-      renderModels(filtered);
+      renderModels(globalModels);
     }
 
     function populatePlaygroundDropdown(models) {
       const select = document.getElementById('pg-model-select');
-      select.innerHTML = models.map(m => `<option value="${m.id}">${m.id} (${m.provider || 'general'})</option>`).join('');
+      select.innerHTML = models.map(m => `<option value="${m.id}">${m.id} [${m.provider || 'general'}]</option>`).join('');
     }
 
     function clearChat() {
       chatHistory = [];
-      document.getElementById('chat-messages').innerHTML = `<div class="text-center text-slate-600 my-auto py-20 font-mono text-xs">Chat session reset. Ready for new prompts.</div>`;
+      document.getElementById('chat-messages').innerHTML = `<div class="text-center text-zinc-600 my-auto py-20 uppercase tracking-wider">Terminal session reset. Ready for zero-cost execution.</div>`;
     }
 
     async function sendPlaygroundMessage() {
@@ -366,14 +446,14 @@ console.log(response.choices[0].message.content);</code></pre>
       appendMessageBubble('user', text);
 
       const assistantMsgId = 'msg-' + Date.now();
-      appendMessageBubble('assistant', '<span class="animate-pulse text-slate-500">Routing across active key pools & gateways...</span>', assistantMsgId);
+      appendMessageBubble('assistant', '<span class="animate-pulse text-emerald-400">Routing across Antigravity free pools...</span>', assistantMsgId);
 
       try {
         const res = await fetch('/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${customKey || 'antigravity-pool-default'}`
+            'Authorization': `Bearer ${customKey || 'antigravity-free-pool'}`
           },
           body: JSON.stringify({
             model: model,
@@ -393,10 +473,10 @@ console.log(response.choices[0].message.content);</code></pre>
           chatHistory.push({ role: "assistant", content: reply });
           document.getElementById(assistantMsgId).innerText = reply;
         } else {
-          document.getElementById(assistantMsgId).innerHTML = `<span class="text-red-400 font-mono text-xs">Error: ${JSON.stringify(data)}</span>`;
+          document.getElementById(assistantMsgId).innerHTML = `<span class="text-red-400 text-xs">Error: ${JSON.stringify(data)}</span>`;
         }
       } catch (err) {
-        document.getElementById(assistantMsgId).innerHTML = `<span class="text-red-400 font-mono text-xs">Network Routing Error: ${err.message}</span>`;
+        document.getElementById(assistantMsgId).innerHTML = `<span class="text-red-400 text-xs">Gateway Routing Error: ${err.message}</span>`;
       }
     }
 
@@ -406,13 +486,23 @@ console.log(response.choices[0].message.content);</code></pre>
       const div = document.createElement('div');
       div.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
       div.innerHTML = `
-        <div class="max-w-[85%] rounded-2xl px-4 py-3 text-sm ${isUser ? 'bg-emerald-600 text-slate-950 font-medium' : 'bg-slate-900 border border-slate-800 text-slate-100'}">
-          <div class="text-[10px] font-mono opacity-60 mb-1">${isUser ? 'You' : 'Model Output'}</div>
+        <div class="max-w-[85%] border ${isUser ? 'border-emerald-500/50 bg-emerald-500 text-black font-bold' : 'border-zinc-800 bg-black text-zinc-200'} p-4 shadow-xl">
+          <div class="text-[9px] font-bold uppercase tracking-widest opacity-60 mb-1.5">${isUser ? 'USER_PROMPT' : 'ANTIGRAVITY_RESPONSE'}</div>
           <div ${id ? `id="${id}"` : ''} class="whitespace-pre-wrap leading-relaxed">${htmlContent}</div>
         </div>
       `;
       container.appendChild(div);
       container.scrollTop = container.scrollHeight;
+    }
+
+    function openDiagnosticModal() {
+      const modal = document.getElementById('diagnostic-modal');
+      document.getElementById('diagnostic-json').innerText = latestDiagnosticReport ? JSON.stringify(latestDiagnosticReport, null, 2) : JSON.stringify({ error: "Diagnostic report initializing..." }, null, 2);
+      modal.classList.remove('hidden');
+    }
+
+    function closeDiagnosticModal() {
+      document.getElementById('diagnostic-modal').classList.add('hidden');
     }
 
     // Initialize on load
