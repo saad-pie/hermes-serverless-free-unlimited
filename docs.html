@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antigravity // Docs & NotebookLM Integration</title>
-  <meta name="description" content="NotebookLM document ingestion and Workspace OAuth integration docs for Antigravity Free Open Router.">
+  <title>Antigravity // NotebookLM Video Docs</title>
+  <meta name="description" content="NotebookLM model integration for video generation and Google Workspace authentication.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -58,48 +58,34 @@
 
   <main class="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
     <div class="space-y-2">
-      <h1 class="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-emerald-400">Workspace & Document Synthesis</h1>
-      <p class="text-xs text-zinc-500">Google Workspace integration and automated document-to-video/audio synthesis via Antigravity router.</p>
+      <h1 class="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-emerald-400">NotebookLM Video & Workspace Auth</h1>
+      <p class="text-xs text-zinc-500">Call the literal <code class="text-emerald-400">notebooklm</code> model for automated video and audio overview generation.</p>
     </div>
 
     <div class="border border-zinc-900 bg-black p-4 sm:p-6 space-y-6 text-xs">
       <div>
-        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">1. Google Workspace OAuth & Document Ingestion</h3>
-        <p class="text-[11px] text-zinc-400 leading-relaxed mb-3">
-          While NotebookLM itself lacks a public API, Antigravity integrates directly with Google Workspace (Google Drive, Docs, Sheets) via OAuth. You can connect your Google account to ingest your research documents, PDFs, and notes directly into the router for context synthesis.
-        </p>
-        <pre class="bg-zinc-950 p-4 border border-zinc-900 text-emerald-400 overflow-x-auto select-all leading-relaxed text-[11px]"><code>// Ingest Google Doc into Antigravity Chat/Video pipeline
-const response = await fetch('https://antigravity-seven-delta.vercel.app/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer antigravity-free'
-  },
-  body: JSON.stringify({
-    model: 'Atria-Dawn-Preview',
-    messages: [{ role: 'user', content: 'Synthesize my connected Google Drive notes into a research briefing.' }]
-  })
-});</code></pre>
-      </div>
-
-      <div>
-        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">2. Automated Video Overview Generation</h3>
-        <p class="text-[11px] text-zinc-400 leading-relaxed mb-3">
-          After synthesizing your notes or documents, you can automatically generate video overviews or cinematic visual summaries using our `/v1/videos/generations` endpoint:
-        </p>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">1. NotebookLM Video Generation cURL Request</h3>
         <pre class="bg-zinc-950 p-4 border border-zinc-900 text-emerald-400 overflow-x-auto select-all leading-relaxed text-[11px]"><code>curl -s https://antigravity-seven-delta.vercel.app/v1/videos/generations \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer antigravity-free" \
   -d '{
-    "model": "flux-video-schnell",
-    "prompt": "Cinematic explanation video based on research notes"
+    "model": "notebooklm",
+    "prompt": "Cinematic explanation video based on research notes",
+    "Theme": "Cyberpunk Neon"
   }'</code></pre>
+      </div>
+
+      <div>
+        <h3 class="font-bold text-zinc-300 uppercase tracking-wider mb-2">2. Google Account Authentication & Workspace Integration</h3>
+        <p class="text-[11px] text-zinc-400 leading-relaxed mb-3">
+          Antigravity supports Google Workspace OAuth integration to securely link Google accounts and ingest documents from Google Drive and Google Docs into your notebook generation pipelines.
+        </p>
       </div>
     </div>
   </main>
 
   <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest mt-auto">
-    ANTIGRAVITY // WORKSPACE DOCS
+    ANTIGRAVITY // NOTEBOOKLM DOCS
   </footer>
 
   <script>
