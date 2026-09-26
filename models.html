@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antigravity // Models</title>
-  <meta name="description" content="Verified zero-cost model registry across all active free pools including Atria 100M and AIHubMix 1M token quotas.">
+  <title>Antigravity // Models Registry</title>
+  <meta name="description" content="Explore 200+ verified free AI models including Atria 100M tokens and Unorouter weekly quotas.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -31,34 +31,46 @@
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
 
-  <!-- Minimalist Header -->
-  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="index.html" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
-        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+  <!-- Navigation -->
+  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <a href="index.html" class="font-extrabold text-xs sm:text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
         <span>ANTIGRAVITY_ROUTER</span>
       </a>
-      <nav class="flex items-center space-x-6 text-xs">
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center space-x-6 text-xs">
         <a href="index.html" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
-        <a href="models.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">MODELS</a>
+        <a href="models.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">MODELS (200+)</a>
         <a href="playground.html" class="text-zinc-500 hover:text-emerald-400 transition">PLAYGROUND</a>
         <a href="docs.html" class="text-zinc-500 hover:text-emerald-400 transition">DOCS</a>
       </nav>
+      <!-- Mobile Hamburger Button -->
+      <button onclick="toggleMobileMenu()" class="md:hidden text-zinc-400 hover:text-emerald-400 p-2 text-base focus:outline-none">
+        <i class="fa-solid fa-bars" id="menu-icon"></i>
+      </button>
+    </div>
+    <!-- Mobile Menu Dropdown -->
+    <div id="mobile-menu" class="hidden md:hidden border-b border-zinc-900 bg-black px-6 py-4 space-y-3 text-xs">
+      <a href="index.html" class="block text-zinc-400 hover:text-emerald-400 py-1">INDEX</a>
+      <a href="models.html" class="block text-emerald-400 font-bold py-1">MODELS (200+)</a>
+      <a href="playground.html" class="block text-zinc-400 hover:text-emerald-400 py-1">PLAYGROUND</a>
+      <a href="docs.html" class="block text-zinc-400 hover:text-emerald-400 py-1">DOCS</a>
     </div>
   </header>
 
   <!-- Main Content -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-12 space-y-8">
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
     <div class="space-y-2">
-      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-zinc-100">Model Registry</h1>
-      <p class="text-xs text-zinc-500">Live API-fetched limits (Atria: 100M tokens, AIHubMix: 1M tokens, Unorouter: weekly limits).</p>
+      <h1 class="text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-zinc-100">Model Registry (200+)</h1>
+      <p class="text-xs text-zinc-500">Live API-fetched limits, featuring flagship models like Atria-Dawn-Preview (100M quota), Gemini 3.6 Flash, and Unorouter weekly pools.</p>
     </div>
 
     <!-- Filters Bar -->
-    <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between border border-zinc-900 bg-black p-4">
-      <div class="relative flex-1">
+    <div class="flex flex-col gap-4 items-stretch border border-zinc-900 bg-black p-4">
+      <div class="relative w-full">
         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-zinc-600 text-xs"></i>
-        <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models..." class="w-full bg-black border border-zinc-800 pl-10 pr-4 py-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
+        <input type="text" id="model-search" oninput="filterModels()" placeholder="Search models by name or provider..." class="w-full bg-black border border-zinc-800 pl-10 pr-4 py-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
       </div>
       <div id="provider-filters" class="flex flex-wrap gap-1.5 text-xs">
         <button onclick="filterProvider('all')" id="filter-btn-all" class="px-3 py-2 font-bold bg-emerald-500 text-black">ALL</button>
@@ -73,18 +85,30 @@
     </div>
 
     <!-- Models Grid -->
-    <div id="models-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div class="col-span-full py-20 text-center text-zinc-600 text-xs uppercase">Loading API-fetched model registry...</div>
+    <div id="models-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="col-span-full py-20 text-center text-zinc-600 text-xs uppercase animate-pulse">Loading API-fetched model registry...</div>
     </div>
   </main>
 
-  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest">
+  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest mt-auto">
     ANTIGRAVITY // MODELS REGISTRY
   </footer>
 
   <script>
     let globalModels = [];
     let activeProviderFilter = 'all';
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const icon = document.getElementById('menu-icon');
+      if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        icon.className = 'fa-solid fa-xmark text-emerald-400';
+      } else {
+        menu.classList.add('hidden');
+        icon.className = 'fa-solid fa-bars';
+      }
+    }
 
     async function fetchModels() {
       try {
@@ -124,12 +148,12 @@
       });
 
       if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-full py-16 text-center text-zinc-600 text-xs uppercase">No models found.</div>`;
+        grid.innerHTML = `<div class="col-span-full py-16 text-center text-zinc-600 text-xs uppercase">No models found matching your query.</div>`;
         return;
       }
 
       grid.innerHTML = filtered.map(m => {
-        const isAtria = (m.provider || '').toLowerCase() === 'atria';
+        const isAtria = (m.provider || '').toLowerCase() === 'atria' || m.id === 'Atria-Dawn-Preview';
         const isAiHubMix = (m.provider || '').toLowerCase() === 'aihubmix';
         const isUnorouter = (m.provider || '').toLowerCase() === 'unorouter';
         
@@ -141,19 +165,22 @@
         } else if (m.tpm >= 1000000) {
           tokenDisplay = (m.tpm / 1000000).toFixed(0) + 'M';
           tokenLabel = isAiHubMix ? 'MODEL QUOTA' : 'TPM';
-        } else {
+        } else if (m.tpm >= 1000) {
           tokenDisplay = (m.tpm / 1000).toFixed(0) + 'k';
           tokenLabel = isUnorouter ? 'WEEKLY' : 'TPM';
+        } else {
+          tokenDisplay = m.tpm;
+          tokenLabel = 'TOKENS';
         }
 
         return `
-          <div class="border ${isAtria ? 'border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'border-zinc-900'} bg-black p-5 flex flex-col justify-between hover:border-emerald-500 transition">
+          <div class="border ${isAtria ? 'border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] bg-emerald-950/10' : 'border-zinc-900 bg-black'} p-5 flex flex-col justify-between hover:border-emerald-500 transition">
             <div>
               <div class="flex items-center justify-between mb-3">
                 <span class="text-[9px] border ${isAtria ? 'border-emerald-500 text-emerald-400 font-extrabold bg-emerald-500/10' : 'border-zinc-800 text-zinc-400'} px-2 py-0.5 uppercase tracking-wider">${m.provider || 'google'}</span>
                 <span class="text-[9px] text-emerald-400 font-bold">100% FREE</span>
               </div>
-              <h3 class="font-bold text-xs ${isAtria ? 'text-emerald-400 text-sm' : 'text-zinc-200'} mb-2 truncate" title="${m.id}">${m.id}</h3>
+              <h3 class="font-bold text-xs sm:text-sm ${isAtria ? 'text-emerald-300' : 'text-zinc-200'} mb-2 truncate" title="${m.id}">${m.id}</h3>
             </div>
             <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
               <div class="bg-zinc-950 p-1.5 border border-zinc-900">

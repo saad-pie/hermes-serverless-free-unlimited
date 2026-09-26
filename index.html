@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antigravity // Index</title>
-  <meta name="description" content="Ultimate zero-cost unified LLM gateway balancing across Atria, Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII free pools.">
+  <title>Antigravity // Free Open AI Router</title>
+  <meta name="description" content="Ultimate zero-cost OpenAI compatible router featuring Atria 100M tokens, Gemini, Unorouter, AIHubMix, and 200+ flagship models.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -31,83 +31,181 @@
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
 
-  <!-- Minimalist Header -->
-  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="index.html" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
-        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+  <!-- Navigation -->
+  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <a href="index.html" class="font-extrabold text-xs sm:text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span>
         <span>ANTIGRAVITY_ROUTER</span>
       </a>
-      <nav class="flex items-center space-x-6 text-xs">
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center space-x-6 text-xs">
         <a href="index.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">INDEX</a>
-        <a href="models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
+        <a href="models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS (200+)</a>
         <a href="playground.html" class="text-zinc-500 hover:text-emerald-400 transition">PLAYGROUND</a>
         <a href="docs.html" class="text-zinc-500 hover:text-emerald-400 transition">DOCS</a>
       </nav>
+      <!-- Mobile Hamburger Button -->
+      <button onclick="toggleMobileMenu()" class="md:hidden text-zinc-400 hover:text-emerald-400 p-2 text-base focus:outline-none">
+        <i class="fa-solid fa-bars" id="menu-icon"></i>
+      </button>
+    </div>
+    <!-- Mobile Menu Dropdown -->
+    <div id="mobile-menu" class="hidden md:hidden border-b border-zinc-900 bg-black px-6 py-4 space-y-3 text-xs">
+      <a href="index.html" class="block text-emerald-400 font-bold py-1">INDEX</a>
+      <a href="models.html" class="block text-zinc-400 hover:text-emerald-400 py-1">MODELS (200+)</a>
+      <a href="playground.html" class="block text-zinc-400 hover:text-emerald-400 py-1">PLAYGROUND</a>
+      <a href="docs.html" class="block text-zinc-400 hover:text-emerald-400 py-1">DOCS</a>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-16 space-y-16">
-
-    <!-- Hero Section -->
-    <section class="space-y-6">
-      <div class="inline-flex items-center space-x-2 border border-emerald-500/30 bg-emerald-500/5 px-3 py-1 text-[10px] text-emerald-400 uppercase tracking-widest">
-        <span>[STATUS: ATRIA DAWN & 100% FREE ACTIVE]</span>
+  <!-- Hero Section -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-16 space-y-12 sm:space-y-16">
+    <div class="space-y-6 text-center max-w-3xl mx-auto">
+      <div class="inline-flex items-center space-x-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] sm:text-xs uppercase tracking-widest">
+        <i class="fa-solid fa-bolt text-emerald-400"></i>
+        <span>Zero-Cost Unified AI Gateway</span>
       </div>
-      <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight uppercase text-zinc-100 leading-tight">
-        Zero-Cost Open Router <br>
-        <span class="text-emerald-400">Shining Above All</span>
+      <h1 class="text-3xl sm:text-5xl font-extrabold uppercase tracking-tight text-zinc-100 leading-tight">
+        Flagship AI Models. <span class="text-emerald-400">Completely Free.</span>
       </h1>
-      <p class="text-xs sm:text-sm text-zinc-500 max-w-2xl leading-relaxed">
-        Featuring <strong class="text-emerald-400 font-bold">Atria-Dawn-Preview</strong> (256K context) alongside Google Gemini, Unorouter, AIHubMix, JankRouter, FreeAIXYZ, and OSAII free pools with instant failover.
+      <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
+        Route requests across Atria Dawn (100M tokens), Gemini 3.6/3.7 Flash, Unorouter (up to 5.79B weekly tokens), AIHubMix, OSAII, and JankRouter via a single OpenAI-compatible endpoint.
       </p>
-      <div class="flex items-center space-x-4 pt-4">
-        <a href="playground.html" class="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold px-6 py-3 text-xs tracking-widest uppercase transition flex items-center space-x-2">
-          <i class="fa-solid fa-terminal"></i>
-          <span>LAUNCH TERMINAL</span>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        <a href="playground.html" class="w-full sm:w-auto px-6 py-3 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider hover:bg-emerald-400 transition shadow-[0_0_20px_rgba(16,185,129,0.3)] text-center">
+          Open Playground
         </a>
-        <a href="models.html" class="border border-zinc-800 hover:border-emerald-500/50 bg-black text-zinc-300 px-6 py-3 text-xs tracking-widest uppercase transition">
-          VIEW MODELS
+        <a href="models.html" class="w-full sm:w-auto px-6 py-3 bg-black border border-zinc-800 text-zinc-300 font-bold text-xs uppercase tracking-wider hover:border-emerald-500 transition text-center">
+          Explore 200+ Models
         </a>
       </div>
-    </section>
+    </div>
 
-    <!-- Minimalist Stats Grid -->
-    <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div class="border border-zinc-900 bg-black p-6 space-y-2">
-        <div class="text-[10px] text-zinc-600 uppercase tracking-widest">Active Key Pools</div>
-        <div id="stat-keys" class="text-2xl font-extrabold text-emerald-400">98+</div>
+    <!-- Flagship Models Highlight Grid -->
+    <div class="space-y-6">
+      <div class="flex items-center justify-between border-b border-zinc-900 pb-3">
+        <h2 class="text-sm sm:text-base font-extrabold uppercase tracking-wider text-zinc-200 flex items-center space-x-2">
+          <i class="fa-solid fa-crown text-amber-400"></i>
+          <span>Flagship Models Highlight</span>
+        </h2>
+        <span class="text-[10px] text-zinc-500 uppercase">Top Performer Quotas</span>
       </div>
-      <div class="border border-zinc-900 bg-black p-6 space-y-2">
-        <div class="text-[10px] text-zinc-600 uppercase tracking-widest">Verified Free Models</div>
-        <div id="stat-models" class="text-2xl font-extrabold text-emerald-400">176+</div>
-      </div>
-      <div class="border border-zinc-900 bg-black p-6 space-y-2">
-        <div class="text-[10px] text-zinc-600 uppercase tracking-widest">Routing Cost</div>
-        <div class="text-2xl font-extrabold text-emerald-400">$0.00</div>
-      </div>
-    </section>
 
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Atria Dawn -->
+        <div class="border border-emerald-500/50 bg-black p-5 flex flex-col justify-between shadow-[0_0_25px_rgba(16,185,129,0.1)] relative overflow-hidden">
+          <div class="absolute top-0 right-0 bg-emerald-500 text-black text-[9px] font-extrabold px-3 py-0.5 uppercase">Featured</div>
+          <div class="space-y-3">
+            <span class="text-[9px] border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 uppercase font-bold">Atria Provider</span>
+            <h3 class="font-extrabold text-sm text-emerald-300">Atria-Dawn-Preview</h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">State-of-the-art flagship reasoning model with massive 100M token quota and ultra-fast inference.</p>
+          </div>
+          <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPM</div><div class="text-zinc-300 font-bold">60</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">QUOTA</div><div class="text-emerald-400 font-bold">100M</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPD</div><div class="text-zinc-300 font-bold">5k</div></div>
+          </div>
+        </div>
+
+        <!-- Gemini 3.6 Flash -->
+        <div class="border border-zinc-800 bg-black p-5 flex flex-col justify-between hover:border-emerald-500 transition">
+          <div class="space-y-3">
+            <span class="text-[9px] border border-zinc-800 bg-zinc-900 text-zinc-300 px-2 py-0.5 uppercase">Unorouter / Gemini</span>
+            <h3 class="font-extrabold text-sm text-zinc-100">gemini-3.6-flash:free</h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">Next-generation multimodal flash model featuring 1.12 Billion weekly token allowance and 1M context.</p>
+          </div>
+          <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPM</div><div class="text-zinc-300 font-bold">60</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">WEEKLY</div><div class="text-emerald-400 font-bold">1.12B</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">CTX</div><div class="text-zinc-300 font-bold">1M</div></div>
+          </div>
+        </div>
+
+        <!-- Nemotron Ultra 550B -->
+        <div class="border border-zinc-800 bg-black p-5 flex flex-col justify-between hover:border-emerald-500 transition">
+          <div class="space-y-3">
+            <span class="text-[9px] border border-zinc-800 bg-zinc-900 text-zinc-300 px-2 py-0.5 uppercase">Unorouter Flagship</span>
+            <h3 class="font-extrabold text-sm text-zinc-100">nemotron-3-ultra-550b:free</h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">Massive 550B parameter powerhouse with an incredible 5.79 Billion weekly token limit.</p>
+          </div>
+          <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPM</div><div class="text-zinc-300 font-bold">60</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">WEEKLY</div><div class="text-emerald-400 font-bold">5.79B</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">CTX</div><div class="text-zinc-300 font-bold">1.0M</div></div>
+          </div>
+        </div>
+
+        <!-- Gemma 4 26B -->
+        <div class="border border-zinc-800 bg-black p-5 flex flex-col justify-between hover:border-emerald-500 transition">
+          <div class="space-y-3">
+            <span class="text-[9px] border border-zinc-800 bg-zinc-900 text-zinc-300 px-2 py-0.5 uppercase">Unorouter Flagship</span>
+            <h3 class="font-extrabold text-sm text-zinc-100">gemma-4-26b:free</h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">Top-tier open weights model backed by 2.65 Billion weekly tokens and 262.1K context window.</p>
+          </div>
+          <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPM</div><div class="text-zinc-300 font-bold">60</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">WEEKLY</div><div class="text-emerald-400 font-bold">2.65B</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">CTX</div><div class="text-zinc-300 font-bold">262k</div></div>
+          </div>
+        </div>
+
+        <!-- Space Bunny Alpha -->
+        <div class="border border-zinc-800 bg-black p-5 flex flex-col justify-between hover:border-emerald-500 transition">
+          <div class="space-y-3">
+            <span class="text-[9px] border border-zinc-800 bg-zinc-900 text-zinc-300 px-2 py-0.5 uppercase">Unorouter Flagship</span>
+            <h3 class="font-extrabold text-sm text-zinc-100">space-bunny-alpha:free</h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">High-performance research model with 2.11 Billion weekly token limit and 1M context.</p>
+          </div>
+          <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPM</div><div class="text-zinc-300 font-bold">60</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">WEEKLY</div><div class="text-emerald-400 font-bold">2.11B</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">CTX</div><div class="text-zinc-300 font-bold">1M</div></div>
+          </div>
+        </div>
+
+        <!-- DeepSeek R1 Distill Qwen 32B -->
+        <div class="border border-zinc-800 bg-black p-5 flex flex-col justify-between hover:border-emerald-500 transition">
+          <div class="space-y-3">
+            <span class="text-[9px] border border-zinc-800 bg-zinc-900 text-zinc-300 px-2 py-0.5 uppercase">Unorouter Reasoning</span>
+            <h3 class="font-extrabold text-sm text-zinc-100">deepseek-r1-distill-qwen-32b:free</h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">Advanced chain-of-thought reasoning model optimized for complex coding and math.</p>
+          </div>
+          <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPM</div><div class="text-zinc-300 font-bold">60</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">WEEKLY</div><div class="text-emerald-400 font-bold">21.7M</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">CTX</div><div class="text-zinc-300 font-bold">80k</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Integration Preview -->
+    <div class="border border-zinc-900 bg-black p-6 space-y-4">
+      <h3 class="font-bold text-xs uppercase tracking-wider text-zinc-200">OpenAI Compatible Endpoint</h3>
+      <div class="bg-zinc-950 p-4 border border-zinc-900 font-mono text-xs text-emerald-400 select-all overflow-x-auto">
+        https://antigravity-seven-delta.vercel.app/v1
+      </div>
+      <p class="text-xs text-zinc-500">Use any OpenAI client library with any dummy API key (<code class="text-emerald-400">antigravity-free</code>). All requests are load-balanced across active free models.</p>
+    </div>
   </main>
 
-  <!-- Footer -->
-  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest">
-    ANTIGRAVITY // ZERO-COST OPEN ROUTER GATEWAY
+  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest mt-auto">
+    ANTIGRAVITY // 200+ FREE MODELS GATEWAY
   </footer>
 
   <script>
-    async function loadStats() {
-      try {
-        const res = await fetch('/api/models');
-        const data = await res.json();
-        if (data) {
-          document.getElementById('stat-keys').innerText = `${data.total_active_keys || 98}+`;
-          document.getElementById('stat-models').innerText = `${data.verified_free_models_count || 176}+`;
-        }
-      } catch (_) {}
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const icon = document.getElementById('menu-icon');
+      if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        icon.className = 'fa-solid fa-xmark text-emerald-400';
+      } else {
+        menu.classList.add('hidden');
+        icon.className = 'fa-solid fa-bars';
+      }
     }
-    loadStats();
   </script>
 </body>
 </html>

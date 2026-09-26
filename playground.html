@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity // Playground</title>
-  <meta name="description" content="Zero-cost terminal playground for testing free models including Atria-Dawn-Preview.">
+  <meta name="description" content="Test any of the 200+ zero-cost flagship models in the Antigravity API playground.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -31,145 +31,149 @@
 </head>
 <body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
 
-  <!-- Minimalist Header -->
-  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="index.html" class="font-extrabold text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
-        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+  <!-- Navigation -->
+  <header class="border-b border-zinc-900 bg-black/90 sticky top-0 z-50 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <a href="index.html" class="font-extrabold text-xs sm:text-sm tracking-widest text-emerald-400 flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
         <span>ANTIGRAVITY_ROUTER</span>
       </a>
-      <nav class="flex items-center space-x-6 text-xs">
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center space-x-6 text-xs">
         <a href="index.html" class="text-zinc-500 hover:text-emerald-400 transition">INDEX</a>
-        <a href="models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
+        <a href="models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS (200+)</a>
         <a href="playground.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">PLAYGROUND</a>
         <a href="docs.html" class="text-zinc-500 hover:text-emerald-400 transition">DOCS</a>
       </nav>
+      <!-- Mobile Hamburger Button -->
+      <button onclick="toggleMobileMenu()" class="md:hidden text-zinc-400 hover:text-emerald-400 p-2 text-base focus:outline-none">
+        <i class="fa-solid fa-bars" id="menu-icon"></i>
+      </button>
+    </div>
+    <!-- Mobile Menu Dropdown -->
+    <div id="mobile-menu" class="hidden md:hidden border-b border-zinc-900 bg-black px-6 py-4 space-y-3 text-xs">
+      <a href="index.html" class="block text-zinc-400 hover:text-emerald-400 py-1">INDEX</a>
+      <a href="models.html" class="block text-zinc-400 hover:text-emerald-400 py-1">MODELS (200+)</a>
+      <a href="playground.html" class="block text-emerald-400 font-bold py-1">PLAYGROUND</a>
+      <a href="docs.html" class="block text-zinc-400 hover:text-emerald-400 py-1">DOCS</a>
     </div>
   </header>
 
-  <!-- Main Content -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-10 space-y-6 flex flex-col">
-    <div class="space-y-1">
-      <h1 class="text-2xl font-extrabold uppercase tracking-tight text-zinc-100">Terminal Playground</h1>
-      <p class="text-xs text-zinc-500">Execute prompts through your zero-cost open router gateway (Atria, Gemini, etc.).</p>
+  <!-- Playground Main -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col space-y-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-extrabold uppercase tracking-tight text-zinc-100">API Playground</h1>
+        <p class="text-xs text-zinc-500">Test prompts across any flagship model.</p>
+      </div>
+      <div class="w-full sm:w-72">
+        <label class="block text-[10px] text-zinc-500 uppercase mb-1">Select Model</label>
+        <select id="model-select" class="w-full bg-black border border-zinc-800 text-xs text-emerald-400 p-2.5 focus:outline-none focus:border-emerald-500">
+          <option value="Atria-Dawn-Preview">Atria-Dawn-Preview (Flagship 100M)</option>
+          <option value="gemini-3.6-flash">gemini-3.6-flash</option>
+          <option value="gemma-4-26b:free">gemma-4-26b:free</option>
+          <option value="deepseek-r1-distill-qwen-32b:free">deepseek-r1-distill-qwen-32b:free</option>
+          <option value="nemotron-3-ultra-550b-a55b:free">nemotron-3-ultra-550b-a55b:free</option>
+        </select>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
-      <!-- Controls -->
-      <div class="lg:col-span-1 border border-zinc-900 bg-black p-5 space-y-4 h-fit">
-        <div class="border-b border-zinc-900 pb-3 text-xs font-bold uppercase text-emerald-400">Config</div>
-        
-        <div>
-          <label class="block text-[10px] text-zinc-500 uppercase mb-1.5">Model</label>
-          <select id="pg-model-select" class="w-full bg-black border border-zinc-800 p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
-            <option value="Atria-Dawn-Preview">Atria-Dawn-Preview [atria]</option>
-            <option value="gemini-2.5-flash">gemini-2.5-flash [google]</option>
-          </select>
+    <!-- Chat Box -->
+    <div class="border border-zinc-900 bg-black flex-1 flex flex-col min-h-[450px] p-4 sm:p-6 space-y-4">
+      <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 pr-2 text-xs">
+        <div class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300">
+          <span class="text-[10px] text-emerald-400 font-bold block mb-1">ANTIGRAVITY SYSTEM</span>
+          Welcome to the Antigravity Playground. Type your prompt below to test any active free model instantly.
         </div>
-
-        <div>
-          <label class="block text-[10px] text-zinc-500 uppercase mb-1.5">System Prompt</label>
-          <textarea id="pg-system" rows="3" class="w-full bg-black border border-zinc-800 p-2.5 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">You are an elite AI assistant on Antigravity Free Open Router powered by Atria Dawn Preview.</textarea>
-        </div>
-
-        <button onclick="sendPlaygroundMessage()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold py-3 text-xs tracking-widest uppercase transition">
-          EXECUTE
-        </button>
       </div>
 
-      <!-- Chat Box -->
-      <div class="lg:col-span-3 border border-zinc-900 bg-black flex flex-col h-[600px]">
-        <div class="border-b border-zinc-900 px-5 py-3.5 flex items-center justify-between text-xs">
-          <span class="text-zinc-400 uppercase tracking-wider">Stream Output</span>
-          <button onclick="clearChat()" class="text-zinc-600 hover:text-emerald-400 transition">RESET</button>
-        </div>
-
-        <div id="chat-messages" class="flex-1 p-5 overflow-y-auto space-y-4 text-xs">
-          <div class="text-center text-zinc-700 my-auto py-20 uppercase tracking-wider">Ready for execution.</div>
-        </div>
-
-        <div class="p-4 border-t border-zinc-900 bg-black flex space-x-2">
-          <input type="text" id="pg-user-input" onkeydown="if(event.key==='Enter')sendPlaygroundMessage()" placeholder="Type prompt..." class="flex-1 bg-black border border-zinc-800 px-4 py-3 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500">
-          <button onclick="sendPlaygroundMessage()" class="bg-zinc-900 border border-zinc-800 text-zinc-200 px-5 hover:border-emerald-500 transition"><i class="fa-solid fa-arrow-up"></i></button>
-        </div>
+      <!-- Input Area -->
+      <div class="border-t border-zinc-900 pt-4 flex gap-2">
+        <textarea id="chat-input" rows="2" placeholder="Send a message..." class="flex-1 bg-black border border-zinc-800 p-3 text-xs text-zinc-200 focus:outline-none focus:border-emerald-500 resize-none" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+        <button onclick="sendMessage()" class="px-5 bg-emerald-500 text-black font-bold text-xs uppercase hover:bg-emerald-400 transition flex items-center justify-center">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
       </div>
     </div>
   </main>
 
-  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest">
+  <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest mt-auto">
     ANTIGRAVITY // PLAYGROUND
   </footer>
 
   <script>
-    let chatHistory = [];
-
-    async function loadModels() {
-      try {
-        const res = await fetch('/api/models');
-        const data = await res.json();
-        if (data && data.data) {
-          const select = document.getElementById('pg-model-select');
-          select.innerHTML = data.data.map(m => `<option value="${m.id}" ${m.id === 'Atria-Dawn-Preview' ? 'selected' : ''}>${m.id} [${m.provider || 'general'}]</option>`).join('');
-        }
-      } catch (_) {}
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const icon = document.getElementById('menu-icon');
+      if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        icon.className = 'fa-solid fa-xmark text-emerald-400';
+      } else {
+        menu.classList.add('hidden');
+        icon.className = 'fa-solid fa-bars';
+      }
     }
 
-    function clearChat() {
-      chatHistory = [];
-      document.getElementById('chat-messages').innerHTML = `<div class="text-center text-zinc-700 my-auto py-20 uppercase tracking-wider">Ready for execution.</div>`;
-    }
-
-    async function sendPlaygroundMessage() {
-      const inputEl = document.getElementById('pg-user-input');
-      const text = inputEl.value.trim();
+    async function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      const model = document.getElementById('model-select').value;
       if (!text) return;
 
-      const model = document.getElementById('pg-model-select').value;
-      const systemPrompt = document.getElementById('pg-system').value.trim();
+      const chatMessages = document.getElementById('chat-messages');
+      chatMessages.innerHTML += `
+        <div class="bg-zinc-900/50 p-4 border border-zinc-800 text-zinc-200 ml-8">
+          <span class="text-[10px] text-zinc-500 font-bold block mb-1">YOU</span>
+          ${escapeHtml(text)}
+        </div>
+      `;
+      input.value = '';
+      chatMessages.scrollTop = chatMessages.scrollHeight;
 
-      inputEl.value = '';
-      if (chatHistory.length === 0) document.getElementById('chat-messages').innerHTML = '';
-      if (systemPrompt && chatHistory.length === 0) chatHistory.push({ role: "system", content: systemPrompt });
-
-      chatHistory.push({ role: "user", content: text });
-      appendMessage('user', text);
-
-      const msgId = 'msg-' + Date.now();
-      appendMessage('assistant', '<span class="text-emerald-400 animate-pulse">Routing via Atria / Open Router...</span>', msgId);
+      const loadingId = 'msg-' + Date.now();
+      chatMessages.innerHTML += `
+        <div id="${loadingId}" class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-400 mr-8 animate-pulse">
+          <span class="text-[10px] text-emerald-400 font-bold block mb-1">${model}</span>
+          Generating response...
+        </div>
+      `;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
 
       try {
         const res = await fetch('/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer antigravity-free' },
-          body: JSON.stringify({ model, messages: chatHistory })
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer antigravity-free'
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: text }]
+          })
         });
         const data = await res.json();
-        if (data.choices && data.choices[0]) {
-          const reply = data.choices[0].message.content;
-          chatHistory.push({ role: "assistant", content: reply });
-          document.getElementById(msgId).innerText = reply;
-        } else {
-          document.getElementById(msgId).innerText = JSON.stringify(data);
-        }
+        const reply = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : JSON.stringify(data);
+        
+        document.getElementById(loadingId).outerHTML = `
+          <div class="bg-zinc-950 p-4 border border-zinc-900 text-zinc-300 mr-8">
+            <span class="text-[10px] text-emerald-400 font-bold block mb-1">${model}</span>
+            ${escapeHtml(reply)}
+          </div>
+        `;
       } catch (e) {
-        document.getElementById(msgId).innerText = `Error: ${e.message}`;
+        document.getElementById(loadingId).outerHTML = `
+          <div class="bg-zinc-950 p-4 border border-red-900 text-red-400 mr-8">
+            <span class="text-[10px] text-red-500 font-bold block mb-1">ERROR</span>
+            Failed to connect: ${e.message}
+          </div>
+        `;
       }
+      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function appendMessage(role, html, id='') {
-      const box = document.getElementById('chat-messages');
-      const div = document.createElement('div');
-      div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
-      div.innerHTML = `
-        <div class="max-w-[85%] border ${role === 'user' ? 'border-emerald-500/50 bg-emerald-500 text-black font-bold' : 'border-zinc-800 bg-black text-zinc-300'} p-3.5">
-          <div ${id ? `id="${id}"` : ''} class="whitespace-pre-wrap">${html}</div>
-        </div>
-      `;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-
-    loadModels();
   </script>
 </body>
 </html>
