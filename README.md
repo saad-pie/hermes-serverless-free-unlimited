@@ -27,3 +27,44 @@ Set these up in your Vercel Project Settings under **Environment Variables**:
 * **Chat Completions:** `https://antigravity-seven-delta.vercel.app/v1/chat/completions`
 * **Models List:** `https://antigravity-seven-delta.vercel.app/api/models`
 * 
+## Router behavior contract
+
+This gateway is a fan-out proxy over multiple upstream pools. To keep it
+debuggable, it adheres to the following rules:
+
+- **No fake 200s.** If every upstream fails, the gateway returns HTTP 502
+  with an `error.type` of `all_upstreams_failed` and the list of attempts
+  in `error.attempts`. It never synthesizes a completion.
+- **No silent model substitution.** When a request falls back to a target
+  that must change the `model` field (currently only the Gemini fallback
+  for non-Gemini models), the response includes:
+  - `X-Antigravity-Target: <provider>`
+  - `X-Antigravity-Requested-Model: <original>`
+  - `X-Antigravity-Model-Rewritten: true`
+- **Attempt tracing.** Whenever any target fails before a successful one,
+  the response carries `X-Antigravity-Attempts` with a compact
+  `provider:outcome` list (e.g. `unorouter:timeout,atria:http_error`).
+- **Honest diagnostics.** `GET /v1/models` reports a `live` boolean and a
+  `status` string per provider. `static_table_only` means the models are
+  published from a hardcoded table and were *not* verified against the
+  upstream at request time.
+
+### Probing for dishonesty
+
+`scripts/honesty-probe.sh` sends a unique sentinel token to each model and
+reports:
+
+| Verdict          | Meaning                                                      |
+|------------------|--------------------------------------------------------------|
+| `OK`             | Model matched request and echoed the sentinel                 |
+| `SUBSTITUTED`    | Returned model differs from requested                         |
+| `NO_SENTINEL`    | Model answered but didn't echo the sentinel (possible proxy drift) |
+| `CANNED_FALLBACK`| Response matches a known synthesized message                  |
+| `PARSE_FAIL`     | Non-JSON response (usually a platform timeout page)           |
+
+Run locally:
+```sh
+npm install
+node server.js
+./scripts/honesty-probe.sh http://localhost:3000
+

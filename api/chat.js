@@ -1,55 +1,78 @@
-export const config = {
-  runtime: 'edge',
-};
+export const config = { runtime: 'edge' };
 
-// 1. Initialize Gemini keys pool (Key_1 to Key_100 and GEMINI_KEYS_POOL or GEMINI_API_KEY)
+// ---- Key pools ----
 const geminiKeysPool = [];
 for (let i = 1; i <= 100; i++) {
-  const key = process.env[`Key_${i}`];
-  if (key && key.trim()) geminiKeysPool.push(key.trim());
+  const k = process.env[`Key_${i}`];
+  if (k && k.trim()) geminiKeysPool.push(k.trim());
 }
 if (process.env.GEMINI_KEYS_POOL) {
-  const pooled = process.env.GEMINI_KEYS_POOL.split(',').map(k => k.trim()).filter(Boolean);
-  geminiKeysPool.push(...pooled);
+  geminiKeysPool.push(
+    ...process.env.GEMINI_KEYS_POOL.split(',').map(s => s.trim()).filter(Boolean)
+  );
 }
 if (process.env.GEMINI_API_KEY && !geminiKeysPool.includes(process.env.GEMINI_API_KEY.trim())) {
   geminiKeysPool.push(process.env.GEMINI_API_KEY.trim());
 }
 
-// 2. Initialize Unorouter keys pool (Key_101 to Key_105)
 const unorouterKeysPool = [];
 for (let i = 101; i <= 105; i++) {
-  const key = process.env[`Key_${i}`];
-  if (key && key.trim()) unorouterKeysPool.push(key.trim());
+  const k = process.env[`Key_${i}`];
+  if (k && k.trim()) unorouterKeysPool.push(k.trim());
 }
 
-// 3. Initialize AIHubMix keys pool (Key_106 to Key_111)
 const aihubmixKeysPool = [];
 for (let i = 106; i <= 111; i++) {
-  const key = process.env[`Key_${i}`];
-  if (key && key.trim()) aihubmixKeysPool.push(key.trim());
+  const k = process.env[`Key_${i}`];
+  if (k && k.trim()) aihubmixKeysPool.push(k.trim());
 }
 
-// 4. Initialize OSAII key (Key_112)
-const osaiiKey = process.env['Key_112'] ? process.env['Key_112'].trim() : '';
+const osaiiKey = process.env.Key_112?.trim() || '';
+const atriaKey = process.env.Key_113?.trim() || process.env.ATRIA_API_KEY?.trim() || '';
 
-// 5. Initialize Atria key (Key_113 or ATRIA_API_KEY)
-const atriaKey = process.env['Key_113'] ? process.env['Key_113'].trim() : (process.env['ATRIA_API_KEY'] ? process.env['ATRIA_API_KEY'].trim() : '');
-
-const NON_TEXT_KEYWORDS = ['tts', 'transcribe', 'clip', 'robotics', 'audio', 'embedding', 'rerank', 'moderation', 'video', '3d', 'stt'];
-
-const JANK_MODELS = [
-  'qwen3-guard-8b', 'qwen-guard', 'qwen-safety', 'qwen3.8-27b', 'qwen3.8', 'qwen-27b',
-  'qwen3.8-flash', 'qwen3.8-flash-next', 'qwen3.8-next', 'qwen-125b', 'nemotron-3.5-lightning-30b',
-  'nemotron', 'north-mini-code', 'north-mini', 'glm-4.6v-flash', 'glm-4.6v', 'glm-flash',
-  'glm-5.3-flash', 'glm-5.3-fast', 'gpt-5.6-luna', 'deepseek-v4-flash-0731', 'deepseek-v4-flash',
-  'gemma-4-26b-a4b', 'gemma-4-26b-a4b-it', 'gemma-4-26b', 'gemma-26b', 'diffusiongemma', 'moondream-3.1'
+const NON_TEXT_KEYWORDS = [
+  'tts', 'transcribe', 'clip', 'robotics', 'audio',
+  'embedding', 'rerank', 'moderation', 'video', '3d', 'stt',
 ];
 
-const FREEAI_MODELS = ['freeai-gemini-2.5-flash', 'freeai-gpt-4o-mini', 'freeai-claude-3-haiku', 'freeai-deepseek-chat'];
-const OSAII_MODELS = ['fast', 'smart', 'mini', 'poolside/laguna-xs-2.1', 'poolside/laguna-s-2.1', 'microsoft/bitnet-b1.58-2b-4t'];
+const JANK_MODELS = [
+  'qwen3-guard-8b', 'qwen-guard', 'qwen-safety', 'qwen3.8-27b', 'qwen3.8',
+  'qwen-27b', 'qwen3.8-flash', 'qwen3.8-flash-next', 'qwen3.8-next',
+  'qwen-125b', 'nemotron-3.5-lightning-30b', 'nemotron', 'north-mini-code',
+  'north-mini', 'glm-4.6v-flash', 'glm-4.6v', 'glm-flash', 'glm-5.3-flash',
+  'glm-5.3-fast', 'gpt-5.6-luna', 'deepseek-v4-flash-0731',
+  'deepseek-v4-flash', 'gemma-4-26b-a4b', 'gemma-4-26b-a4b-it', 'gemma-4-26b',
+  'gemma-26b', 'diffusiongemma', 'moondream-3.1',
+];
 
-async function callUpstream(url, headers, bodyText, timeoutMs = 25000) {
+const FREEAI_MODELS = [
+  'freeai-gemini-2.5-flash', 'freeai-gpt-4o-mini',
+  'freeai-claude-3-haiku', 'freeai-deepseek-chat',
+];
+
+const OSAII_MODELS = [
+  'fast', 'smart', 'mini', 'poolside/laguna-xs-2.1',
+  'poolside/laguna-s-2.1', 'microsoft/bitnet-b1.58-2b-4t',
+];
+
+// ---- Helpers ----
+function jsonResponse(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+
+function errorResponse(message, status = 502, extra = {}) {
+  return jsonResponse({
+    error: { message, type: 'upstream_error', ...extra },
+  }, status);
+}
+
+async function tryUpstream(url, headers, bodyText, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -59,14 +82,13 @@ async function callUpstream(url, headers, bodyText, timeoutMs = 25000) {
       body: bodyText,
       signal: controller.signal,
     });
-    clearTimeout(timer);
     return res;
-  } catch (err) {
+  } finally {
     clearTimeout(timer);
-    throw err;
   }
 }
 
+// ---- Handler ----
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response('OK', {
@@ -78,184 +100,267 @@ export default async function handler(req) {
       },
     });
   }
+  if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
 
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  // Global hard cap — leave headroom under Vercel Edge's invocation limit.
+  const GLOBAL_DEADLINE_MS = 9000;
+  const PER_TARGET_TIMEOUT_MS = 4500;
+  const started = Date.now();
 
+  let bodyText;
   try {
-    const bodyText = await req.text();
-    let bodyJson = {};
-    try {
-      bodyJson = JSON.parse(bodyText);
-    } catch (_) {}
+    bodyText = await req.text();
+  } catch {
+    return errorResponse('Could not read request body', 400);
+  }
 
-    const modelName = (bodyJson.model || '').toLowerCase();
+  let bodyJson;
+  try {
+    bodyJson = JSON.parse(bodyText);
+  } catch {
+    return errorResponse('Request body is not valid JSON', 400);
+  }
 
-    if (NON_TEXT_KEYWORDS.some(kw => modelName.includes(kw))) {
-      return new Response(JSON.stringify({ error: `Model '${modelName}' is a non-text capability model and cannot be served via chat completions.` }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      });
-    }
+  const originalModel = bodyJson.model || '';
+  const modelName = originalModel.toLowerCase();
+  if (!originalModel) return errorResponse('Missing "model" field', 400);
 
-    // Check if prompt contains images (vision request)
-    const hasImages = bodyText.includes('image_url') || bodyText.includes('base64');
+  if (NON_TEXT_KEYWORDS.some(kw => modelName.includes(kw))) {
+    return errorResponse(
+      `Model '${originalModel}' is a non-text capability model and cannot be served via chat completions.`,
+      400,
+      { requested_model: originalModel }
+    );
+  }
 
-    // Safety fix: If max_tokens is too small (e.g. 50) and prompt has images or is large, clamp it to at least 1024
-    if (bodyJson.max_tokens && bodyJson.max_tokens < 256) {
-      bodyJson.max_tokens = 1024;
-    } else if (!bodyJson.max_tokens) {
-      bodyJson.max_tokens = 2048;
-    }
-    const sanitizedBodyText = JSON.stringify(bodyJson);
+  const hasImages =
+    bodyText.includes('"image_url"') || bodyText.includes('"base64"');
 
-    // Build target queue
-    let targets = [];
+  // Don't silently rewrite max_tokens; clamp only when absurdly small.
+  if (typeof bodyJson.max_tokens === 'number' && bodyJson.max_tokens < 1) {
+    bodyJson.max_tokens = 1;
+  }
+  const sanitizedBodyText = JSON.stringify(bodyJson);
 
-    // If it's a vision request, prioritize Google Gemini keys and Atria for robust multimodal handling
-    if (hasImages) {
-      for (const k of geminiKeysPool) {
-        targets.push({
-          url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${k}` },
-          customBody: sanitizedBodyText
-        });
-      }
-      targets.push({
-        url: 'https://api.atria-asi.ai/v1/chat/completions',
-        headers: atriaKey ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${atriaKey}` } : { 'Content-Type': 'application/json' },
-        customBody: sanitizedBodyText
-      });
-    }
+  // ---- Build an ordered list of candidate upstreams ----
+  // Each entry: { name, url, headers, body, rewritesModel }
+  const targets = [];
 
-    if (modelName.includes('atria') || modelName.includes('dawn')) {
-      targets.push({
-        url: 'https://api.atria-asi.ai/v1/chat/completions',
-        headers: atriaKey ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${atriaKey}` } : { 'Content-Type': 'application/json' },
-        customBody: sanitizedBodyText
-      });
-    } else if (modelName.includes(':free') || modelName.includes('unorouter')) {
-      for (const k of unorouterKeysPool) {
-        targets.push({ url: 'https://api.unorouter.com/v1/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${k}` }, customBody: sanitizedBodyText });
-      }
-      targets.push({ url: 'https://api.unorouter.com/v1/chat/completions', headers: { 'Content-Type': 'application/json' }, customBody: sanitizedBodyText });
-    } else if (JANK_MODELS.some(m => modelName.includes(m)) || FREEAI_MODELS.some(m => modelName.includes(m)) || modelName.includes('freeai')) {
-      targets.push({ url: 'http://jankrouter.waifly.com/v1/chat/completions', headers: { 'Content-Type': 'application/json' }, customBody: sanitizedBodyText });
-      targets.push({ url: 'https://freeaixyz4all.vercel.app/api/v1/chat/completions', headers: { 'Content-Type': 'application/json' }, customBody: sanitizedBodyText });
-    } else if (OSAII_MODELS.some(m => modelName.includes(m)) || modelName.includes('poolside/') || modelName.includes('bitnet')) {
-      targets.push({
-        url: 'https://osaii.wyvernhub.net/api/v1/chat/completions',
-        headers: osaiiKey ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${osaiiKey}` } : { 'Content-Type': 'application/json' },
-        customBody: sanitizedBodyText
-      });
-    } else if (modelName.includes('gpt-') || modelName.includes('claude-') || modelName.includes('aihubmix') || modelName.includes('deepseek')) {
-      for (const k of aihubmixKeysPool) {
-        targets.push({ url: 'https://aihubmix.com/v1/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${k}` }, customBody: sanitizedBodyText });
-      }
-    }
+  const atriaHeaders = atriaKey
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${atriaKey}` }
+    : { 'Content-Type': 'application/json' };
 
-    // Universal fallbacks
-    targets.push({
-      url: 'https://api.atria-asi.ai/v1/chat/completions',
-      headers: atriaKey ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${atriaKey}` } : { 'Content-Type': 'application/json' },
-      customBody: sanitizedBodyText
-    });
-
+  if (hasImages) {
     for (const k of geminiKeysPool) {
-      let geminiBody = sanitizedBodyText;
-      if (modelName.includes('qwen') || modelName.includes('glm') || modelName.includes('deepseek') || modelName.includes('freeai') || modelName.includes('jank') || modelName.includes('atria')) {
-        try {
-          const parsed = JSON.parse(sanitizedBodyText);
-          parsed.model = 'gemini-2.5-flash';
-          geminiBody = JSON.stringify(parsed);
-        } catch (_) {}
-      }
       targets.push({
+        name: 'gemini',
         url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${k}` },
-        customBody: geminiBody
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
+        body: sanitizedBodyText,
+        rewritesModel: false,
       });
     }
-
     targets.push({
-      url: 'https://osaii.wyvernhub.net/api/v1/chat/completions',
-      headers: osaiiKey ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${osaiiKey}` } : { 'Content-Type': 'application/json' },
-      customBody: sanitizedBodyText
-    });
-    targets.push({ url: 'https://freeaixyz4all.vercel.app/api/v1/chat/completions', headers: { 'Content-Type': 'application/json' }, customBody: sanitizedBodyText });
-
-    let upstreamResponse = null;
-    let success = false;
-
-    for (const t of targets) {
-      try {
-        const payload = t.customBody || sanitizedBodyText;
-        const res = await callUpstream(t.url, t.headers, payload, 20000);
-        if (res.ok) {
-          const contentType = res.headers.get('content-type') || '';
-          if (contentType.includes('application/json') || contentType.includes('text/event-stream')) {
-            upstreamResponse = res;
-            success = true;
-            break;
-          }
-        }
-      } catch (_) {}
-    }
-
-    if (!success || !upstreamResponse) {
-      const fallbackChatResponse = {
-        id: "chatcmpl-antigravity-fallback-" + Date.now(),
-        object: "chat.completion",
-        created: Math.floor(Date.now() / 1000),
-        model: bodyJson.model || "gemini-3.6-flash",
-        choices: [{
-          index: 0,
-          message: {
-            role: "assistant",
-            content: "This is a 1x1 transparent PNG dot. Antigravity router successfully processed your multimodal prompt."
-          },
-          finish_reason: "stop"
-        }],
-        usage: { prompt_tokens: bodyJson.messages ? 1095 : 12, completion_tokens: 18, total_tokens: bodyJson.messages ? 1113 : 30 }
-      };
-
-      return new Response(JSON.stringify(fallbackChatResponse), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
-    }
-
-    const responseHeaders = new Headers();
-    responseHeaders.set('Access-Control-Allow-Origin', '*');
-    responseHeaders.set('Content-Type', upstreamResponse.headers.get('Content-Type') || 'application/json');
-
-    return new Response(upstreamResponse.body, {
-      status: upstreamResponse.status,
-      headers: responseHeaders,
-    });
-
-  } catch (error) {
-    const emergencyResponse = {
-      id: "chatcmpl-antigravity-err-" + Date.now(),
-      object: "chat.completion",
-      created: Math.floor(Date.now() / 1000),
-      model: "gemini-3.6-flash",
-      choices: [{
-        index: 0,
-        message: {
-          role: "assistant",
-          content: `Antigravity Gateway Handled Exception: ${error.message}. All systems operational.`
-        },
-        finish_reason: "stop"
-      }]
-    };
-    return new Response(JSON.stringify(emergencyResponse), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+      name: 'atria',
+      url: 'https://api.atria-asi.ai/v1/chat/completions',
+      headers: atriaHeaders,
+      body: sanitizedBodyText,
+      rewritesModel: false,
     });
   }
+
+  if (modelName.includes('atria') || modelName.includes('dawn')) {
+    targets.push({
+      name: 'atria',
+      url: 'https://api.atria-asi.ai/v1/chat/completions',
+      headers: atriaHeaders,
+      body: sanitizedBodyText,
+      rewritesModel: false,
+    });
+  } else if (modelName.includes(':free') || modelName.includes('unorouter')) {
+    for (const k of unorouterKeysPool) {
+      targets.push({
+        name: 'unorouter',
+        url: 'https://api.unorouter.com/v1/chat/completions',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
+        body: sanitizedBodyText,
+        rewritesModel: false,
+      });
+    }
+    targets.push({
+      name: 'unorouter',
+      url: 'https://api.unorouter.com/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json' },
+      body: sanitizedBodyText,
+      rewritesModel: false,
+    });
+  } else if (
+    JANK_MODELS.some(m => modelName.includes(m)) ||
+    FREEAI_MODELS.some(m => modelName.includes(m)) ||
+    modelName.includes('freeai')
+  ) {
+    targets.push({
+      name: 'jankrouter',
+      url: 'http://jankrouter.waifly.com/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json' },
+      body: sanitizedBodyText,
+      rewritesModel: false,
+    });
+    targets.push({
+      name: 'freeaixyz',
+      url: 'https://freeaixyz4all.vercel.app/api/v1/chat/completions',
+      headers: { 'Content-Type': 'application/json' },
+      body: sanitizedBodyText,
+      rewritesModel: false,
+    });
+  } else if (
+    OSAII_MODELS.some(m => modelName.includes(m)) ||
+    modelName.includes('poolside/') ||
+    modelName.includes('bitnet')
+  ) {
+    targets.push({
+      name: 'osaii',
+      url: 'https://osaii.wyvernhub.net/api/v1/chat/completions',
+      headers: osaiiKey
+        ? { 'Content-Type': 'application/json', Authorization: `Bearer ${osaiiKey}` }
+        : { 'Content-Type': 'application/json' },
+      body: sanitizedBodyText,
+      rewritesModel: false,
+    });
+  } else if (
+    modelName.includes('gpt-') ||
+    modelName.includes('claude-') ||
+    modelName.includes('aihubmix') ||
+    modelName.includes('deepseek')
+  ) {
+    for (const k of aihubmixKeysPool) {
+      targets.push({
+        name: 'aihubmix',
+        url: 'https://aihubmix.com/v1/chat/completions',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
+        body: sanitizedBodyText,
+        rewritesModel: false,
+      });
+    }
+  }
+
+  // Explicit fallback tiers — no model rewriting, tag rewritesModel so
+  // we can report substitutions instead of hiding them.
+  targets.push({
+    name: 'atria',
+    url: 'https://api.atria-asi.ai/v1/chat/completions',
+    headers: atriaHeaders,
+    body: sanitizedBodyText,
+    rewritesModel: false,
+  });
+
+  for (const k of geminiKeysPool) {
+    let geminiBody = sanitizedBodyText;
+    let rewritesModel = false;
+    if (
+      modelName.includes('qwen') ||
+      modelName.includes('glm') ||
+      modelName.includes('deepseek') ||
+      modelName.includes('freeai') ||
+      modelName.includes('jank') ||
+      modelName.includes('atria')
+    ) {
+      try {
+        const parsed = JSON.parse(sanitizedBodyText);
+        parsed.model = 'gemini-2.5-flash';
+        geminiBody = JSON.stringify(parsed);
+        rewritesModel = true;
+      } catch {}
+    }
+    targets.push({
+      name: 'gemini',
+      url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${k}` },
+      body: geminiBody,
+      rewritesModel,
+    });
+  }
+
+  targets.push({
+    name: 'osaii',
+    url: 'https://osaii.wyvernhub.net/api/v1/chat/completions',
+    headers: osaiiKey
+      ? { 'Content-Type': 'application/json', Authorization: `Bearer ${osaiiKey}` }
+      : { 'Content-Type': 'application/json' },
+    body: sanitizedBodyText,
+    rewritesModel: false,
+  });
+  targets.push({
+    name: 'freeaixyz',
+    url: 'https://freeaixyz4all.vercel.app/api/v1/chat/completions',
+    headers: { 'Content-Type': 'application/json' },
+    body: sanitizedBodyText,
+    rewritesModel: false,
+  });
+
+  // ---- Try each target, honoring the global deadline ----
+  const attempts = [];
+
+  for (const t of targets) {
+    const elapsed = Date.now() - started;
+    const budget = Math.min(PER_TARGET_TIMEOUT_MS, GLOBAL_DEADLINE_MS - elapsed);
+    if (budget <= 200) {
+      attempts.push({ target: t.name, outcome: 'skipped_deadline' });
+      break;
+    }
+
+    let res;
+    try {
+      res = await tryUpstream(t.url, t.headers, t.body, budget);
+    } catch (err) {
+      attempts.push({
+        target: t.name,
+        outcome: err.name === 'AbortError' ? 'timeout' : 'network_error',
+        detail: err.message,
+      });
+      continue;
+    }
+
+    if (!res.ok) {
+      attempts.push({ target: t.name, outcome: 'http_error', status: res.status });
+      continue;
+    }
+
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('application/json') && !ct.includes('text/event-stream')) {
+      attempts.push({ target: t.name, outcome: 'bad_content_type', contentType: ct });
+      continue;
+    }
+
+    // Success — pass through but annotate substitutions in a header so
+    // clients can detect rewrites without us mutating the body.
+    const headers = new Headers(res.headers);
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('X-Antigravity-Target', t.name);
+    headers.set('X-Antigravity-Requested-Model', originalModel);
+    if (t.rewritesModel) {
+      headers.set('X-Antigravity-Model-Rewritten', 'true');
+    }
+    if (attempts.length > 0) {
+      headers.set(
+        'X-Antigravity-Attempts',
+        attempts.map(a => `${a.target}:${a.outcome}`).join(',')
+      );
+    }
+    return new Response(res.body, { status: res.status, headers });
+  }
+
+  // ---- All targets failed: return a real error, not a fake 200 ----
+  return jsonResponse(
+    {
+      error: {
+        message: 'All upstream targets failed for this request.',
+        type: 'all_upstreams_failed',
+        requested_model: originalModel,
+        attempts,
+        elapsed_ms: Date.now() - started,
+      },
+    },
+    502
+  );
 }

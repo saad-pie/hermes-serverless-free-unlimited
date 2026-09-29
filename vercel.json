@@ -1,50 +1,20 @@
 {
   "version": 2,
   "outputDirectory": ".",
+  "functions": {
+    "api/*.js": { "maxDuration": 10 }
+  },
   "routes": [
-    {
-      "src": "/v1/chat/completions",
-      "dest": "/api/chat"
-    },
-    {
-      "src": "/api/chat",
-      "dest": "/api/chat"
-    },
-    {
-      "src": "/v1/models",
-      "dest": "/api/models"
-    },
-    {
-      "src": "/api/models",
-      "dest": "/api/models"
-    },
-    {
-      "src": "/models",
-      "dest": "/models.html"
-    },
-    {
-      "src": "/playground",
-      "dest": "/playground.html"
-    },
-    {
-      "src": "/docs",
-      "dest": "/docs.html"
-    },
-    {
-      "src": "/models.html",
-      "dest": "/models.html"
-    },
-    {
-      "src": "/playground.html",
-      "dest": "/playground.html"
-    },
-    {
-      "src": "/docs.html",
-      "dest": "/docs.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "src": "/v1/chat/completions", "dest": "/api/chat" },
+    { "src": "/api/chat",            "dest": "/api/chat" },
+    { "src": "/v1/models",           "dest": "/api/models" },
+    { "src": "/api/models",          "dest": "/api/models" },
+    { "src": "/models",              "dest": "/models.html" },
+    { "src": "/playground",          "dest": "/playground.html" },
+    { "src": "/docs",                "dest": "/docs.html" },
+    { "src": "/models.html",         "dest": "/models.html" },
+    { "src": "/playground.html",     "dest": "/playground.html" },
+    { "src": "/docs.html",           "dest": "/docs.html" },
+    { "src": "/(.*)",                "dest": "/index.html" }
   ]
 }
