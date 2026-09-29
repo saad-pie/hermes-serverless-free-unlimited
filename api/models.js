@@ -1,6 +1,8 @@
 export const config = { runtime: 'edge' };
 
-// ---- Key pools ----
+// ------------------------------------------------------------------
+// Key pools
+// ------------------------------------------------------------------
 const rawGeminiKeys = [];
 for (let i = 1; i <= 100; i++) {
   const k = process.env[`Key_${i}`];
@@ -31,17 +33,13 @@ const rawOsaiiKey = process.env.Key_112?.trim() || '';
 const rawAtriaKey =
   process.env.Key_113?.trim() || process.env.ATRIA_API_KEY?.trim() || '';
 
-const BANNED_PROJECT_IDS = ['gen-lang-client-0355993627', 'steveai-466814'];
 const NON_TEXT_KEYWORDS = [
   'image', 'tts', 'transcribe', 'clip', 'robotics', 'audio',
   'embedding', 'rerank', 'moderation', 'video', '3d', 'stt',
 ];
 
-const UNOROUTER_WEEKLY_LIMITS = {
-  // ...paste your existing table here unchanged...
-};
-
 function isTextModel(id) {
+  if (!id) return false;
   const lower = id.toLowerCase();
   return !NON_TEXT_KEYWORDS.some(kw => lower.includes(kw));
 }
@@ -56,14 +54,13 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
   }
 }
 
-function jsonResponse(obj, status = 200, extraHeaders = {}) {
+function jsonResponse(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status,
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Cache-Control': 's-maxage=60, stale-while-revalidate',
-      ...extraHeaders,
     },
   });
 }
@@ -84,16 +81,17 @@ export default async function handler(req) {
   }
 
   const providerStats = {
-    google:    { configured_keys: rawGeminiKeys.length,    live: false, models_count: 0, status: 'unchecked' },
-    unorouter:{ configured_keys: rawUnorouterKeys.length,  live: false, models_count: 0, status: 'unchecked' },
-    aihubmix:  { configured_keys: rawAihubmixKeys.length,  live: false, models_count: 0, status: 'unchecked' },
-    jankrouter:{ configured_keys: 0,                       live: false, models_count: 0, status: 'unchecked' },
-    freeaixyz: { configured_keys: 0,                       live: false, models_count: 0, status: 'unchecked' },
-    osaii:     { configured_keys: rawOsaiiKey ? 1 : 0,     live: false, models_count: 0, status: 'unchecked' },
-    atria:     { configured_keys: rawAtriaKey ? 1 : 0,     live: false, models_count: 0, status: 'unchecked' },
+    google:     { configured_keys: rawGeminiKeys.length,     live: false, models_count: 0, status: 'unchecked' },
+    unorouter:  { configured_keys: rawUnorouterKeys.length,  live: false, models_count: 0, status: 'unchecked' },
+    aihubmix:   { configured_keys: rawAihubmixKeys.length,   live: false, models_count: 0, status: 'unchecked' },
+    jankrouter: { configured_keys: 0,                        live: false, models_count: 0, status: 'unchecked' },
+    freeaixyz:  { configured_keys: 0,                        live: false, models_count: 0, status: 'unchecked' },
+    osaii:      { configured_keys: rawOsaiiKey ? 1 : 0,      live: false, models_count: 0, status: 'unchecked' },
+    atria:      { configured_keys: rawAtriaKey ? 1 : 0,      live: false, models_count: 0, status: 'unchecked' },
   };
 
   const allFormattedModels = [];
+  const allWorkingKeyIds = new Set(); // dedupe keys across pools
   let totalWorkingKeys = 0;
 
   const settleSafe = async (fn) => {
@@ -102,34 +100,31 @@ export default async function handler(req) {
   };
 
   const results = await Promise.all([
-    // 1. Google
+    // ---- Google Gemini ----
     settleSafe(async () => {
       let working = 0;
       let sample = null;
       for (const key of rawGeminiKeys) {
         const res = await fetchWithTimeout(
           `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
-          {},
-          4000
+          {}, 4000
         ).catch(() => null);
         if (res && res.ok) {
           const data = await res.json();
-          const s = JSON.stringify(data);
-          if (!BANNED_PROJECT_IDS.some(p => s.includes(p))) {
-            working++;
-            if (!sample) sample = data;
-          }
+          working++;
+          allWorkingKeyIds.add(`gemini:${key.slice(-6)}`);
+          if (!sample) sample = data;
         }
       }
       providerStats.google.live = working > 0;
       providerStats.google.status = working > 0 ? 'live' : 'unreachable';
+
       if (sample && sample.models) {
         const models = sample.models
           .filter(m => {
             const id = m.name.replace('models/', '');
-            const text = m.supportedGenerationMethods?.includes('generateContent');
-            const freeTier = id.includes('flash') || id.includes('gemma') || id.includes('lite');
-            return text && isTextModel(id) && freeTier;
+            const text = (m.supportedGenerationMethods || []).includes('generateContent');
+            return text && isTextModel(id);
           })
           .map(m => {
             const id = m.name.replace('models/', '');
@@ -148,44 +143,71 @@ export default async function handler(req) {
       return { models: [], workingKeys: working };
     }),
 
-    // 2. Unorouter (authoritative table only — mark live=false)
+    // ---- Unorouter (live catalog) ----
     settleSafe(async () => {
-      const models = Object.entries(UNOROUTER_WEEKLY_LIMITS)
-        .filter(([id]) => isTextModel(id))
-        .map(([id, info]) => ({
-          id,
-          provider: 'unorouter',
-          rpm: 60,
-          tpm: info.tokens,
-          rpd: 5000,
-          limit_type: 'per_week',
-          weekly_label: info.label,
-          source: 'static_table',
-        }));
-      providerStats.unorouter.live = false;
-      providerStats.unorouter.status = 'static_table_only';
+      let models = [];
+      try {
+        const res = await fetchWithTimeout(
+          'https://api.unorouter.com/api/pricing/catalog', {}, 4000
+        );
+        if (res.ok) {
+          const data = await res.json();
+          models = (data.models || [])
+            .filter(m => m.online === true && m.is_free === true && isTextModel(m.model_name))
+            .map(m => ({
+              id: m.model_name,
+              provider: 'unorouter',
+              rpm: m.rate_limit_rpm || 60,
+              tpm: m.weekly_limit_tokens || m.context_window || 500000,
+              rpd: 5000,
+              limit_type: 'per_week',
+            }));
+        }
+      } catch {}
+
+      // Verify one key works
+      let working = 0;
+      if (rawUnorouterKeys.length > 0) {
+        const test = await fetchWithTimeout('https://api.unorouter.com/v1/models', {
+          headers: { Authorization: `Bearer ${rawUnorouterKeys[0]}` },
+        }, 4000).catch(() => null);
+        if (test && test.ok) {
+          working = rawUnorouterKeys.length;
+          allWorkingKeyIds.add('unorouter');
+        }
+      }
+
+      providerStats.unorouter.live = models.length > 0 && working > 0;
+      providerStats.unorouter.status = models.length === 0 ? 'unreachable'
+        : working === 0 ? 'no_working_keys'
+        : 'live';
       providerStats.unorouter.models_count = models.length;
-      return { models, workingKeys: 0 };
+      return { models, workingKeys: working };
     }),
 
-    // 3. AIHubMix
+    // ---- AIHubMix ----
     settleSafe(async () => {
       if (rawAihubmixKeys.length === 0) {
         providerStats.aihubmix.status = 'no_keys_configured';
         return { models: [], workingKeys: 0 };
       }
-      const res = await fetchWithTimeout('https://aihubmix.com/v1/models', {
-        headers: {
-          Authorization: `Bearer ${rawAihubmixKeys[0]}`,
-          'Content-Type': 'application/json',
-        },
-      }, 4000).catch(() => null);
-      if (!res || !res.ok) {
-        providerStats.aihubmix.status = 'unreachable';
-        return { models: [], workingKeys: 0 };
+      let working = 0;
+      let catalog = null;
+      for (const key of rawAihubmixKeys) {
+        const res = await fetchWithTimeout('https://aihubmix.com/v1/models', {
+          headers: { Authorization: `Bearer ${key}` },
+        }, 4000).catch(() => null);
+        if (res && res.ok) {
+          working++;
+          allWorkingKeyIds.add(`aihubmix:${key.slice(-6)}`);
+          if (!catalog) catalog = await res.json();
+        }
       }
-      const data = await res.json();
-      const models = (data.data || [])
+      if (!catalog) {
+        providerStats.aihubmix.status = 'unreachable';
+        return { models: [], workingKeys: working };
+      }
+      const models = (catalog.data || [])
         .filter(m => isTextModel(m.id || ''))
         .map(m => ({
           id: m.id,
@@ -195,16 +217,17 @@ export default async function handler(req) {
           rpd: 1000,
           limit_type: 'fixed_token_quota',
         }));
-      providerStats.aihubmix.live = true;
-      providerStats.aihubmix.status = 'live';
+      providerStats.aihubmix.live = working > 0 && models.length > 0;
+      providerStats.aihubmix.status = models.length === 0 ? 'unreachable' : 'live';
       providerStats.aihubmix.models_count = models.length;
-      return { models, workingKeys: rawAihubmixKeys.length };
+      return { models, workingKeys: working };
     }),
 
-    // 4. JankRouter
+    // ---- JankRouter ----
     settleSafe(async () => {
-      const res = await fetchWithTimeout('http://jankrouter.waifly.com/v1/models', {}, 4000)
-        .catch(() => null);
+      const res = await fetchWithTimeout(
+        'http://jankrouter.waifly.com/v1/models', {}, 4000
+      ).catch(() => null);
       if (!res || !res.ok) {
         providerStats.jankrouter.status = 'unreachable';
         return { models: [], workingKeys: 0 };
@@ -220,13 +243,13 @@ export default async function handler(req) {
           rpd: 1000,
           limit_type: 'per_minute',
         }));
-      providerStats.jankrouter.live = true;
-      providerStats.jankrouter.status = 'live';
+      providerStats.jankrouter.live = models.length > 0;
+      providerStats.jankrouter.status = models.length > 0 ? 'live' : 'empty_catalog';
       providerStats.jankrouter.models_count = models.length;
       return { models, workingKeys: 0 };
     }),
 
-    // 5. FreeAIXYZ
+    // ---- FreeAIXYZ ----
     settleSafe(async () => {
       const res = await fetchWithTimeout(
         'https://freeaixyz4all.vercel.app/api/v1/models', {}, 4000
@@ -235,7 +258,9 @@ export default async function handler(req) {
         providerStats.freeaixyz.status = 'unreachable';
         return { models: [], workingKeys: 0 };
       }
-      const data = await res.json();
+      let data;
+      try { data = await res.json(); }
+      catch { providerStats.freeaixyz.status = 'invalid_json'; return { models: [], workingKeys: 0 }; }
       const list = data.data || data.models || data;
       if (!Array.isArray(list)) {
         providerStats.freeaixyz.status = 'unexpected_shape';
@@ -251,13 +276,13 @@ export default async function handler(req) {
           rpd: 2000,
           limit_type: 'per_minute',
         }));
-      providerStats.freeaixyz.live = true;
-      providerStats.freeaixyz.status = 'live';
+      providerStats.freeaixyz.live = models.length > 0;
+      providerStats.freeaixyz.status = models.length > 0 ? 'live' : 'empty_catalog';
       providerStats.freeaixyz.models_count = models.length;
       return { models, workingKeys: 0 };
     }),
 
-    // 6. OSAII
+    // ---- OSAII ----
     settleSafe(async () => {
       const headers = { 'Content-Type': 'application/json' };
       if (rawOsaiiKey) headers.Authorization = `Bearer ${rawOsaiiKey}`;
@@ -280,54 +305,85 @@ export default async function handler(req) {
           id: typeof m === 'string' ? m : m.id,
           provider: 'osaii',
           rpm: rawOsaiiKey ? 120 : 60,
-          tpm: m.tpm || 256000,
+          tpm: 256000,
           rpd: 5000,
           limit_type: 'per_minute',
         }));
-      providerStats.osaii.live = true;
-      providerStats.osaii.status = 'live';
+      if (rawOsaiiKey) allWorkingKeyIds.add('osaii');
+      providerStats.osaii.live = models.length > 0;
+      providerStats.osaii.status = models.length > 0 ? 'live' : 'empty_catalog';
       providerStats.osaii.models_count = models.length;
       return { models, workingKeys: rawOsaiiKey ? 1 : 0 };
     }),
 
-    // 7. Atria
+    // ---- Atria ----
     settleSafe(async () => {
-      if (rawAtriaKey) {
+      if (!rawAtriaKey) {
+        providerStats.atria.status = 'no_keys_configured';
+        return { models: [], workingKeys: 0 };
+      }
+      let live = false;
+      let remoteModels = [];
+      try {
         const res = await fetchWithTimeout(
           'https://api.atria-asi.ai/v1/models',
           { headers: { Authorization: `Bearer ${rawAtriaKey}` } },
           4000
-        ).catch(() => null);
-        if (res && res.ok) {
-          providerStats.atria.live = true;
-          providerStats.atria.status = 'live';
-        } else {
-          providerStats.atria.status = 'unreachable';
+        );
+        if (res.ok) {
+          live = true;
+          allWorkingKeyIds.add('atria');
+          const data = await res.json();
+          const list = data.data || data.models || data;
+          if (Array.isArray(list)) {
+            remoteModels = list
+              .filter(m => isTextModel(typeof m === 'string' ? m : (m.id || '')))
+              .map(m => ({
+                id: typeof m === 'string' ? m : m.id,
+                provider: 'atria',
+                rpm: 60,
+                tpm: 100000000,
+                rpd: 5000,
+                limit_type: 'fixed_token_quota',
+              }));
+          }
         }
-      } else {
-        providerStats.atria.status = 'no_keys_configured';
-      }
-      const models = [
-        {
+      } catch {}
+      if (remoteModels.length === 0) {
+        remoteModels = [{
           id: 'Atria-Dawn-Preview',
           provider: 'atria',
           rpm: 60,
           tpm: 100000000,
           rpd: 5000,
           limit_type: 'fixed_token_quota',
-        },
-      ];
-      providerStats.atria.models_count = models.length;
-      return { models, workingKeys: rawAtriaKey ? 1 : 0 };
+        }];
+      }
+      providerStats.atria.live = live;
+      providerStats.atria.status = live ? 'live' : 'unreachable';
+      providerStats.atria.models_count = remoteModels.length;
+      return { models: remoteModels, workingKeys: live ? 1 : 0 };
     }),
   ]);
 
   for (const r of results) {
     if (r.ok && r.value) {
       allFormattedModels.push(...(r.value.models || []));
-      totalWorkingKeys += r.value.workingKeys || 0;
     }
   }
+
+  // Deduplicate by (provider, id)
+  const seen = new Set();
+  const deduped = [];
+  for (const m of allFormattedModels) {
+    const key = `${m.provider}::${m.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(m);
+  }
+
+  // Count unique working keys
+  totalWorkingKeys = allWorkingKeyIds.size;
 
   const liveProviders = Object.entries(providerStats)
     .filter(([, s]) => s.live)
@@ -336,15 +392,15 @@ export default async function handler(req) {
   return jsonResponse({
     object: 'list',
     total_active_keys: totalWorkingKeys,
-    verified_free_models_count: allFormattedModels.length,
+    verified_free_models_count: deduped.length,
     diagnostic_report: {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'production',
       total_active_keys: totalWorkingKeys,
-      verified_free_models_count: allFormattedModels.length,
+      verified_free_models_count: deduped.length,
       live_providers: liveProviders,
       providers: providerStats,
     },
-    data: allFormattedModels,
+    data: deduped,
   });
 }
