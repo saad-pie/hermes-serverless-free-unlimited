@@ -35,10 +35,31 @@ const atriaKey = process.env.Key_113?.trim() || process.env.ATRIA_API_KEY?.trim(
 // ------------------------------------------------------------------
 // Model classification
 // ------------------------------------------------------------------
+// Cheap denylist — catches obvious non-chat providers and endpoints.
 const NON_TEXT_KEYWORDS = [
   'tts', 'transcribe', 'clip', 'robotics', 'audio',
   'embedding', 'rerank', 'moderation', 'video', '3d', 'stt',
+  'whisper', 'lyria', 'nano-banana',
 ];
+
+// Image-generation checkpoints (Stable Diffusion variants) whose IDs do
+// not contain any of the keywords above but cannot serve chat completions.
+const IMAGE_MODEL_PATTERN =
+  /(sdxl|sd-?xl|pony|anime|illustrious|flux|checkpoint|diffusion|juggernaut|dreamshaper|deliberate|albedobase|absolutereality|rev-animated|anything-v\d|fustercluck|ampony|quiet-goodnight|flat-2d|icbinp|swampony|tunix|prefect|cyberrealistic|wai-|ntr-mix|lucid-origin|phoenix-1)/i;
+
+// Google exposes internal and agentic endpoints that don't accept chat
+// messages. These are not usable via /v1/chat/completions.
+const NON_CHAT_GOOGLE_PATTERN =
+  /(^antigravity-|^deep-research|computer-use-preview)/i;
+
+function isChatModel(id, provider) {
+  if (!id) return false;
+  const lower = id.toLowerCase();
+  if (NON_TEXT_KEYWORDS.some(kw => lower.includes(kw))) return false;
+  if (IMAGE_MODEL_PATTERN.test(lower)) return false;
+  if (provider === 'google' && NON_CHAT_GOOGLE_PATTERN.test(lower)) return false;
+  return true;
+}
 
 // Gemini's native line. Anything matching this goes to Google.
 const GEMINI_PATTERN = /^(gemini|gemma|models\/gemini|models\/gemma)/i;
@@ -68,7 +89,7 @@ async function loadLiveCatalog() {
   const providers = {};
 
   const tasks = [
-    // Gemini (needs a key)
+    // ---- Google Gemini ----
     (async () => {
       const ids = new Set();
       let live = false;
@@ -76,8 +97,7 @@ async function loadLiveCatalog() {
         try {
           const res = await fetchWithTimeout(
             `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
-            {},
-            3500
+            {}, 3500
           );
           if (!res.ok) continue;
           const data = await res.json();
@@ -85,27 +105,29 @@ async function loadLiveCatalog() {
             const id = (m.name || '').replace('models/', '');
             if (!id) continue;
             const supportsText = (m.supportedGenerationMethods || []).includes('generateContent');
-            if (supportsText && !NON_TEXT_KEYWORDS.some(kw => id.toLowerCase().includes(kw))) {
+            if (supportsText && isChatModel(id, 'google')) {
               ids.add(id.toLowerCase());
               live = true;
             }
           }
-          if (live) break; // one good key is enough
+          if (live) break; // one good key is enough to enumerate
         } catch {}
       }
       providers.google = { ids, live, status: live ? 'live' : 'unreachable' };
     })(),
 
-    // Unorouter (public catalog endpoint)
+    // ---- Unorouter (public catalog endpoint) ----
     (async () => {
       const ids = new Set();
       let live = false;
       try {
-        const res = await fetchWithTimeout('https://api.unorouter.com/api/pricing/catalog', {}, 3500);
+        const res = await fetchWithTimeout(
+          'https://api.unorouter.com/api/pricing/catalog', {}, 3500
+        );
         if (res.ok) {
           const data = await res.json();
           for (const m of data.models || []) {
-            if (m.online && m.is_free && m.model_name) {
+            if (m.online && m.is_free && m.model_name && isChatModel(m.model_name, 'unorouter')) {
               ids.add(m.model_name.toLowerCase());
               live = true;
             }
@@ -115,7 +137,7 @@ async function loadLiveCatalog() {
       providers.unorouter = { ids, live, status: live ? 'live' : 'unreachable' };
     })(),
 
-    // AIHubMix (public /v1/models with key)
+    // ---- AIHubMix (only free-callable IDs) ----
     (async () => {
       const ids = new Set();
       let live = false;
@@ -127,7 +149,12 @@ async function loadLiveCatalog() {
           if (res.ok) {
             const data = await res.json();
             for (const m of data.data || []) {
-              if (m.id) ids.add(m.id.toLowerCase());
+              const id = (m.id || '').toLowerCase();
+              // Only surface free-tier callable IDs; paid IDs will 402/403.
+              const isFreeCallable = /-free$|:free$|-free-/.test(id);
+              if (isFreeCallable && isChatModel(id, 'aihubmix')) {
+                ids.add(id);
+              }
             }
             live = ids.size > 0;
           }
@@ -136,7 +163,7 @@ async function loadLiveCatalog() {
       providers.aihubmix = { ids, live, status: live ? 'live' : 'unreachable' };
     })(),
 
-    // JankRouter (public)
+    // ---- JankRouter ----
     (async () => {
       const ids = new Set();
       let live = false;
@@ -145,7 +172,9 @@ async function loadLiveCatalog() {
         if (res.ok) {
           const data = await res.json();
           for (const m of data.data || []) {
-            if (m.id) ids.add(m.id.toLowerCase());
+            if (m.id && isChatModel(m.id, 'jankrouter')) {
+              ids.add(m.id.toLowerCase());
+            }
           }
           live = ids.size > 0;
         }
@@ -153,21 +182,23 @@ async function loadLiveCatalog() {
       providers.jankrouter = { ids, live, status: live ? 'live' : 'unreachable' };
     })(),
 
-    // OSAII
+    // ---- OSAII ----
     (async () => {
       const ids = new Set();
       let live = false;
       try {
         const headers = { 'Content-Type': 'application/json' };
         if (osaiiKey) headers.Authorization = `Bearer ${osaiiKey}`;
-        const res = await fetchWithTimeout('https://osaii.wyvernhub.net/api/v1/models', { headers }, 3500);
+        const res = await fetchWithTimeout(
+          'https://osaii.wyvernhub.net/api/v1/models', { headers }, 3500
+        );
         if (res.ok) {
           const data = await res.json();
           const list = data.data || data.models || data;
           if (Array.isArray(list)) {
             for (const m of list) {
               const id = typeof m === 'string' ? m : m.id;
-              if (id) ids.add(id.toLowerCase());
+              if (id && isChatModel(id, 'osaii')) ids.add(id.toLowerCase());
             }
             live = ids.size > 0;
           }
@@ -176,19 +207,21 @@ async function loadLiveCatalog() {
       providers.osaii = { ids, live, status: live ? 'live' : 'unreachable' };
     })(),
 
-    // FreeAIXYZ
+    // ---- FreeAIXYZ ----
     (async () => {
       const ids = new Set();
       let live = false;
       try {
-        const res = await fetchWithTimeout('https://freeaixyz4all.vercel.app/api/v1/models', {}, 3500);
+        const res = await fetchWithTimeout(
+          'https://freeaixyz4all.vercel.app/api/v1/models', {}, 3500
+        );
         if (res.ok) {
           const data = await res.json();
           const list = data.data || data.models || data;
           if (Array.isArray(list)) {
             for (const m of list) {
               const id = typeof m === 'string' ? m : m.id;
-              if (id) ids.add(id.toLowerCase());
+              if (id && isChatModel(id, 'freeaixyz')) ids.add(id.toLowerCase());
             }
             live = ids.size > 0;
           }
@@ -197,7 +230,7 @@ async function loadLiveCatalog() {
       providers.freeaixyz = { ids, live, status: live ? 'live' : 'unreachable' };
     })(),
 
-    // Atria (only if key configured)
+    // ---- Atria ----
     (async () => {
       const ids = new Set(['atria-dawn-preview']);
       let live = false;
@@ -211,7 +244,11 @@ async function loadLiveCatalog() {
           live = res.ok;
         } catch {}
       }
-      providers.atria = { ids, live, status: atriaKey ? (live ? 'live' : 'unreachable') : 'no_keys_configured' };
+      providers.atria = {
+        ids,
+        live,
+        status: atriaKey ? (live ? 'live' : 'unreachable') : 'no_keys_configured',
+      };
     })(),
   ];
 
@@ -291,9 +328,10 @@ export default async function handler(req) {
   const modelName = originalModel.toLowerCase();
   if (!originalModel) return errorResponse('Missing "model" field', 400);
 
-  if (NON_TEXT_KEYWORDS.some(kw => modelName.includes(kw))) {
+  // Reject non-chat models up front with a clear reason.
+  if (!isChatModel(originalModel, '')) {
     return errorResponse(
-      `Model '${originalModel}' is a non-text capability model and cannot be served via chat completions.`,
+      `Model '${originalModel}' is not a chat-capable model and cannot be served via chat completions.`,
       400,
       { requested_model: originalModel }
     );
@@ -397,19 +435,18 @@ export default async function handler(req) {
     });
   };
 
-  // Vision requests prefer Gemini, then Atria
+  // Vision requests prefer Gemini, then Atria.
   if (hasImages) {
     pushGemini();
     pushAtria();
   }
 
-  // Route by where the model actually lives
+  // Route by where the model actually lives.
   if (GEMINI_PATTERN.test(modelName)) {
     pushGemini();
   } else if (modelName.includes('atria') || modelName.includes('dawn')) {
     pushAtria();
   } else if (matches.length > 0) {
-    // Live catalog says these providers have it — try in best-guess order
     const order = ['unorouter', 'aihubmix', 'jankrouter', 'osaii', 'freeaixyz', 'atria', 'google'];
     const pushByName = {
       unorouter: pushUnorouter,

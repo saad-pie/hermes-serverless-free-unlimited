@@ -33,15 +33,28 @@ const rawOsaiiKey = process.env.Key_112?.trim() || '';
 const rawAtriaKey =
   process.env.Key_113?.trim() || process.env.ATRIA_API_KEY?.trim() || '';
 
+// ------------------------------------------------------------------
+// Model classification
+// ------------------------------------------------------------------
 const NON_TEXT_KEYWORDS = [
-  'image', 'tts', 'transcribe', 'clip', 'robotics', 'audio',
+  'tts', 'transcribe', 'clip', 'robotics', 'audio',
   'embedding', 'rerank', 'moderation', 'video', '3d', 'stt',
+  'whisper', 'lyria', 'nano-banana',
 ];
 
-function isTextModel(id) {
+const IMAGE_MODEL_PATTERN =
+  /(sdxl|sd-?xl|pony|anime|illustrious|flux|checkpoint|diffusion|juggernaut|dreamshaper|deliberate|albedobase|absolutereality|rev-animated|anything-v\d|fustercluck|ampony|quiet-goodnight|flat-2d|icbinp|swampony|tunix|prefect|cyberrealistic|wai-|ntr-mix|lucid-origin|phoenix-1)/i;
+
+const NON_CHAT_GOOGLE_PATTERN =
+  /(^antigravity-|^deep-research|computer-use-preview)/i;
+
+function isChatModel(id, provider) {
   if (!id) return false;
   const lower = id.toLowerCase();
-  return !NON_TEXT_KEYWORDS.some(kw => lower.includes(kw));
+  if (NON_TEXT_KEYWORDS.some(kw => lower.includes(kw))) return false;
+  if (IMAGE_MODEL_PATTERN.test(lower)) return false;
+  if (provider === 'google' && NON_CHAT_GOOGLE_PATTERN.test(lower)) return false;
+  return true;
 }
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
@@ -91,7 +104,7 @@ export default async function handler(req) {
   };
 
   const allFormattedModels = [];
-  const allWorkingKeyIds = new Set(); // dedupe keys across pools
+  const allWorkingKeyIds = new Set();
   let totalWorkingKeys = 0;
 
   const settleSafe = async (fn) => {
@@ -124,14 +137,15 @@ export default async function handler(req) {
           .filter(m => {
             const id = m.name.replace('models/', '');
             const text = (m.supportedGenerationMethods || []).includes('generateContent');
-            return text && isTextModel(id);
+            return text && isChatModel(id, 'google');
           })
           .map(m => {
             const id = m.name.replace('models/', '');
             return {
               id,
               provider: 'google',
-              rpm: 15 * Math.max(1, working),
+              rpm: 15,                      // per key
+              rpm_aggregate: 15 * working,  // pooled
               tpm: m.inputTokenLimit || 250000,
               rpd: 1500,
               limit_type: 'per_minute',
@@ -143,7 +157,7 @@ export default async function handler(req) {
       return { models: [], workingKeys: working };
     }),
 
-    // ---- Unorouter (live catalog) ----
+    // ---- Unorouter ----
     settleSafe(async () => {
       let models = [];
       try {
@@ -153,7 +167,11 @@ export default async function handler(req) {
         if (res.ok) {
           const data = await res.json();
           models = (data.models || [])
-            .filter(m => m.online === true && m.is_free === true && isTextModel(m.model_name))
+            .filter(m =>
+              m.online === true &&
+              m.is_free === true &&
+              isChatModel(m.model_name, 'unorouter')
+            )
             .map(m => ({
               id: m.model_name,
               provider: 'unorouter',
@@ -165,7 +183,6 @@ export default async function handler(req) {
         }
       } catch {}
 
-      // Verify one key works
       let working = 0;
       if (rawUnorouterKeys.length > 0) {
         const test = await fetchWithTimeout('https://api.unorouter.com/v1/models', {
@@ -178,9 +195,10 @@ export default async function handler(req) {
       }
 
       providerStats.unorouter.live = models.length > 0 && working > 0;
-      providerStats.unorouter.status = models.length === 0 ? 'unreachable'
-        : working === 0 ? 'no_working_keys'
-        : 'live';
+      providerStats.unorouter.status =
+        models.length === 0 ? 'unreachable' :
+        working === 0 ? 'no_working_keys' :
+        'live';
       providerStats.unorouter.models_count = models.length;
       return { models, workingKeys: working };
     }),
@@ -208,7 +226,11 @@ export default async function handler(req) {
         return { models: [], workingKeys: working };
       }
       const models = (catalog.data || [])
-        .filter(m => isTextModel(m.id || ''))
+        .filter(m => {
+          const id = (m.id || '').toLowerCase();
+          const isFreeCallable = /-free$|:free$|-free-/.test(id);
+          return isFreeCallable && isChatModel(id, 'aihubmix');
+        })
         .map(m => ({
           id: m.id,
           provider: 'aihubmix',
@@ -234,7 +256,7 @@ export default async function handler(req) {
       }
       const data = await res.json();
       const models = (data.data || [])
-        .filter(m => isTextModel(m.id || ''))
+        .filter(m => isChatModel(m.id, 'jankrouter'))
         .map(m => ({
           id: m.id,
           provider: 'jankrouter',
@@ -260,14 +282,17 @@ export default async function handler(req) {
       }
       let data;
       try { data = await res.json(); }
-      catch { providerStats.freeaixyz.status = 'invalid_json'; return { models: [], workingKeys: 0 }; }
+      catch {
+        providerStats.freeaixyz.status = 'invalid_json';
+        return { models: [], workingKeys: 0 };
+      }
       const list = data.data || data.models || data;
       if (!Array.isArray(list)) {
         providerStats.freeaixyz.status = 'unexpected_shape';
         return { models: [], workingKeys: 0 };
       }
       const models = list
-        .filter(m => isTextModel(typeof m === 'string' ? m : (m.id || '')))
+        .filter(m => isChatModel(typeof m === 'string' ? m : (m.id || ''), 'freeaixyz'))
         .map(m => ({
           id: typeof m === 'string' ? m : m.id,
           provider: 'freeaixyz',
@@ -300,7 +325,7 @@ export default async function handler(req) {
         return { models: [], workingKeys: 0 };
       }
       const models = list
-        .filter(m => isTextModel(typeof m === 'string' ? m : (m.id || '')))
+        .filter(m => isChatModel(typeof m === 'string' ? m : (m.id || ''), 'osaii'))
         .map(m => ({
           id: typeof m === 'string' ? m : m.id,
           provider: 'osaii',
@@ -337,7 +362,7 @@ export default async function handler(req) {
           const list = data.data || data.models || data;
           if (Array.isArray(list)) {
             remoteModels = list
-              .filter(m => isTextModel(typeof m === 'string' ? m : (m.id || '')))
+              .filter(m => isChatModel(typeof m === 'string' ? m : (m.id || ''), 'atria'))
               .map(m => ({
                 id: typeof m === 'string' ? m : m.id,
                 provider: 'atria',
@@ -382,7 +407,6 @@ export default async function handler(req) {
     deduped.push(m);
   }
 
-  // Count unique working keys
   totalWorkingKeys = allWorkingKeyIds.size;
 
   const liveProviders = Object.entries(providerStats)
