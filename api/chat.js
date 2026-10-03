@@ -32,45 +32,68 @@ for (let i = 106; i <= 111; i++) {
 const osaiiKey = process.env.Key_112?.trim() || '';
 const atriaKey = process.env.Key_113?.trim() || process.env.ATRIA_API_KEY?.trim() || '';
 
+// OpenRouter: primary stable tier for agent workloads.
+const openrouterKey = process.env.OPENROUTER_API_KEY?.trim() || '';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
 // ------------------------------------------------------------------
 // Model classification
 // ------------------------------------------------------------------
-// Cheap denylist — catches obvious non-chat providers and endpoints.
 const NON_TEXT_KEYWORDS = [
   'tts', 'transcribe', 'clip', 'robotics', 'audio',
   'embedding', 'rerank', 'moderation', 'video', '3d', 'stt',
   'whisper', 'lyria', 'nano-banana',
 ];
 
-// Image-generation checkpoints (Stable Diffusion variants) whose IDs do
-// not contain any of the keywords above but cannot serve chat completions.
 const IMAGE_MODEL_PATTERN =
   /(sdxl|sd-?xl|pony|anime|illustrious|flux|checkpoint|diffusion|juggernaut|dreamshaper|deliberate|albedobase|absolutereality|rev-animated|anything-v\d|fustercluck|ampony|quiet-goodnight|flat-2d|icbinp|swampony|tunix|prefect|cyberrealistic|wai-|ntr-mix|lucid-origin|phoenix-1)/i;
 
-// Google exposes internal and agentic endpoints that don't accept chat
-// messages. These are not usable via /v1/chat/completions.
 const NON_CHAT_GOOGLE_PATTERN =
   /(^antigravity-|^deep-research|computer-use-preview)/i;
+
+const NON_CHAT_GOOGLE_SUFFIX = /(-image$|-image-|-image-|^gemini-omni-)/i;
+
+const EXTRA_NON_CHAT_IDS = new Set([
+  'nova-3:free',
+  'nova-3',
+  'gemini-3.1-pro-preview-customtools',
+  'gemini-omni-flash-preview',
+  'gemini-omni-1.1-flash',
+  'qwen3-guard-8b',
+  'moondream-3.1',
+  'nemotron-3.5-content-safety-free',
+  'nemotron-3.5-content-safety',
+  'osaii/voicellm',
+  'osaii/faster-experimental',
+  'osaii/ultrafast-experimental',
+  'aura-1:free',
+  'aura-1',
+]);
 
 function isChatModel(id, provider) {
   if (!id) return false;
   const lower = id.toLowerCase();
+  if (EXTRA_NON_CHAT_IDS.has(lower)) return false;
   if (NON_TEXT_KEYWORDS.some(kw => lower.includes(kw))) return false;
   if (IMAGE_MODEL_PATTERN.test(lower)) return false;
   if (provider === 'google' && NON_CHAT_GOOGLE_PATTERN.test(lower)) return false;
+  if (provider === 'google' && NON_CHAT_GOOGLE_SUFFIX.test(lower)) return false;
   return true;
 }
 
-// Gemini's native line. Anything matching this goes to Google.
+// OpenRouter hosts paid and free models under a `vendor/model` slug.
+// Anything containing a slash is treated as an OpenRouter-shaped ID.
+const OPENROUTER_SLUG_PATTERN = /\//;
+
 const GEMINI_PATTERN = /^(gemini|gemma|models\/gemini|models\/gemma)/i;
 
 // ------------------------------------------------------------------
-// Live catalog cache (per warm edge instance, ~5 min TTL)
+// Live catalog cache — refresh every 3.5 minutes
 // ------------------------------------------------------------------
-const CATALOG_TTL_MS = 5 * 60 * 1000;
+const CATALOG_TTL_MS = 3.5 * 60 * 1000;
 let catalogCache = {
   at: 0,
-  providers: {}, // providerName -> { ids: Set<string>, live: boolean, status: string }
+  providers: {},
 };
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
@@ -89,6 +112,39 @@ async function loadLiveCatalog() {
   const providers = {};
 
   const tasks = [
+    // ---- OpenRouter ----
+    (async () => {
+      const ids = new Set();
+      let live = false;
+      if (openrouterKey) {
+        try {
+          const res = await fetchWithTimeout('https://openrouter.ai/api/v1/models', {
+            headers: { Authorization: `Bearer ${openrouterKey}` },
+          }, 3500);
+          if (res.ok) {
+            const data = await res.json();
+            for (const m of data.data || []) {
+              const id = m.id || '';
+              if (!id) continue;
+              const lower = id.toLowerCase();
+              // Only surface free-tier IDs on OpenRouter by default.
+              // Paid IDs exist too but calling them will burn credits.
+              const isFree = /:free$/.test(lower);
+              if (isFree && isChatModel(id, 'openrouter')) {
+                ids.add(lower);
+              }
+            }
+            live = ids.size > 0;
+          }
+        } catch {}
+      }
+      providers.openrouter = {
+        ids,
+        live,
+        status: openrouterKey ? (live ? 'live' : 'unreachable') : 'no_keys_configured',
+      };
+    })(),
+
     // ---- Google Gemini ----
     (async () => {
       const ids = new Set();
@@ -110,13 +166,13 @@ async function loadLiveCatalog() {
               live = true;
             }
           }
-          if (live) break; // one good key is enough to enumerate
+          if (live) break;
         } catch {}
       }
       providers.google = { ids, live, status: live ? 'live' : 'unreachable' };
     })(),
 
-    // ---- Unorouter (public catalog endpoint) ----
+    // ---- Unorouter ----
     (async () => {
       const ids = new Set();
       let live = false;
@@ -137,7 +193,7 @@ async function loadLiveCatalog() {
       providers.unorouter = { ids, live, status: live ? 'live' : 'unreachable' };
     })(),
 
-    // ---- AIHubMix (only free-callable IDs) ----
+    // ---- AIHubMix ----
     (async () => {
       const ids = new Set();
       let live = false;
@@ -150,7 +206,6 @@ async function loadLiveCatalog() {
             const data = await res.json();
             for (const m of data.data || []) {
               const id = (m.id || '').toLowerCase();
-              // Only surface free-tier callable IDs; paid IDs will 402/403.
               const isFreeCallable = /-free$|:free$|-free-/.test(id);
               if (isFreeCallable && isChatModel(id, 'aihubmix')) {
                 ids.add(id);
@@ -328,7 +383,6 @@ export default async function handler(req) {
   const modelName = originalModel.toLowerCase();
   if (!originalModel) return errorResponse('Missing "model" field', 400);
 
-  // Reject non-chat models up front with a clear reason.
   if (!isChatModel(originalModel, '')) {
     return errorResponse(
       `Model '${originalModel}' is not a chat-capable model and cannot be served via chat completions.`,
@@ -349,13 +403,32 @@ export default async function handler(req) {
     ? { 'Content-Type': 'application/json', Authorization: `Bearer ${atriaKey}` }
     : { 'Content-Type': 'application/json' };
 
-  // ---- Determine routing based on live catalog + model name ----
   const providers = await loadLiveCatalog();
   const matches = findProvidersForModel(originalModel, providers);
 
   const targets = [];
   const push = (t) => targets.push(t);
 
+  // OpenRouter headers include optional referer/title for their dashboard.
+  const openrouterHeaders = openrouterKey
+    ? {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${openrouterKey}`,
+        'HTTP-Referer': 'https://antigravity-seven-delta.vercel.app',
+        'X-Title': 'Antigravity Gateway',
+      }
+    : null;
+
+  const pushOpenRouter = () => {
+    if (!openrouterHeaders) return;
+    push({
+      name: 'openrouter',
+      url: OPENROUTER_URL,
+      headers: openrouterHeaders,
+      body: sanitizedBodyText,
+      rewritesModel: false,
+    });
+  };
   const pushGemini = () => {
     for (const k of geminiKeysPool) {
       push({
@@ -441,14 +514,30 @@ export default async function handler(req) {
     pushAtria();
   }
 
-  // Route by where the model actually lives.
-  if (GEMINI_PATTERN.test(modelName)) {
+  // Routing priority:
+  //   1. OpenRouter slugs (contain '/') → OpenRouter always
+  //   2. Gemini pattern → Google
+  //   3. Atria/Dawn → Atria
+  //   4. Any provider the live catalog says actually has the model
+  //   5. Nothing matched → permissive fallback chain
+  if (!hasImages && OPENROUTER_SLUG_PATTERN.test(modelName)) {
+    pushOpenRouter();
+    // Add Gemini pool as a secondary if the model name also looks Gemini-ish
+    // (e.g. google/gemini-2.5-flash on OpenRouter).
+    if (GEMINI_PATTERN.test(modelName.split('/').pop() || '')) {
+      pushGemini();
+    }
+  } else if (GEMINI_PATTERN.test(modelName)) {
     pushGemini();
+    pushOpenRouter();
   } else if (modelName.includes('atria') || modelName.includes('dawn')) {
     pushAtria();
+    pushOpenRouter();
   } else if (matches.length > 0) {
-    const order = ['unorouter', 'aihubmix', 'jankrouter', 'osaii', 'freeaixyz', 'atria', 'google'];
+    // Prefer OpenRouter if it carries the model; then the rest in order.
+    const order = ['openrouter', 'unorouter', 'aihubmix', 'jankrouter', 'osaii', 'freeaixyz', 'atria', 'google'];
     const pushByName = {
+      openrouter: pushOpenRouter,
       unorouter: pushUnorouter,
       aihubmix: pushAihubmix,
       jankrouter: pushJankrouter,
@@ -461,14 +550,13 @@ export default async function handler(req) {
       if (matches.includes(name) && pushByName[name]) pushByName[name]();
     }
   } else {
-    // Not found in any live catalog. Try providers known to be permissive.
+    pushOpenRouter();
     pushAihubmix();
     pushJankrouter();
     pushOsaii();
     pushUnorouter();
   }
 
-  // ---- Execute ----
   const attempts = [];
 
   for (const t of targets) {
