@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antigravity // Free Open AI Router</title>
-  <meta name="description" content="Ultimate zero-cost OpenAI compatible router featuring Atria 100M tokens, Gemini, Unorouter, AIHubMix, and 200+ flagship models.">
+  <meta name="description" content="Ultimate zero-cost OpenAI compatible router featuring OpenRouter stable tier, Atria 100M tokens, Gemini, Unorouter, AIHubMix, and 200+ flagship models.">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -38,22 +38,19 @@
         <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span>
         <span>ANTIGRAVITY_ROUTER</span>
       </a>
-      <!-- Desktop Nav -->
       <nav class="hidden md:flex items-center space-x-6 text-xs">
         <a href="index.html" class="text-emerald-400 font-bold border-b border-emerald-500 pb-0.5">INDEX</a>
-        <a href="models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS (200+)</a>
+        <a href="models.html" class="text-zinc-500 hover:text-emerald-400 transition">MODELS</a>
         <a href="playground.html" class="text-zinc-500 hover:text-emerald-400 transition">PLAYGROUND</a>
         <a href="docs.html" class="text-zinc-500 hover:text-emerald-400 transition">DOCS</a>
       </nav>
-      <!-- Mobile Hamburger Button -->
       <button onclick="toggleMobileMenu()" class="md:hidden text-zinc-400 hover:text-emerald-400 p-2 text-base focus:outline-none">
         <i class="fa-solid fa-bars" id="menu-icon"></i>
       </button>
     </div>
-    <!-- Mobile Menu Dropdown -->
     <div id="mobile-menu" class="hidden md:hidden border-b border-zinc-900 bg-black px-6 py-4 space-y-3 text-xs">
       <a href="index.html" class="block text-emerald-400 font-bold py-1">INDEX</a>
-      <a href="models.html" class="block text-zinc-400 hover:text-emerald-400 py-1">MODELS (200+)</a>
+      <a href="models.html" class="block text-zinc-400 hover:text-emerald-400 py-1">MODELS</a>
       <a href="playground.html" class="block text-zinc-400 hover:text-emerald-400 py-1">PLAYGROUND</a>
       <a href="docs.html" class="block text-zinc-400 hover:text-emerald-400 py-1">DOCS</a>
     </div>
@@ -70,14 +67,14 @@
         Flagship AI Models. <span class="text-emerald-400">Completely Free.</span>
       </h1>
       <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-        Route requests across Atria Dawn (100M tokens), Gemini 3.6/3.7 Flash, Unorouter (up to 5.79B weekly tokens), AIHubMix, OSAII, and JankRouter via a single OpenAI-compatible endpoint.
+        Route requests across <span class="text-emerald-400 font-bold">OpenRouter</span> (<code>qwen/qwen3.6-plus:free</code> for tool-calling agents), Atria Dawn (100M tokens), Gemini 3.6/3.7 Flash, Unorouter (up to 5.79B weekly tokens), AIHubMix, OSAII, and JankRouter via a single OpenAI-compatible endpoint.
       </p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
         <a href="playground.html" class="w-full sm:w-auto px-6 py-3 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider hover:bg-emerald-400 transition shadow-[0_0_20px_rgba(16,185,129,0.3)] text-center">
           Open Playground
         </a>
         <a href="models.html" class="w-full sm:w-auto px-6 py-3 bg-black border border-zinc-800 text-zinc-300 font-bold text-xs uppercase tracking-wider hover:border-emerald-500 transition text-center">
-          Explore 200+ Models
+          <span id="explore-cta">Explore Models</span>
         </a>
       </div>
     </div>
@@ -93,13 +90,27 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <!-- Atria Dawn -->
-        <div class="border border-emerald-500/50 bg-black p-5 flex flex-col justify-between shadow-[0_0_25px_rgba(16,185,129,0.1)] relative overflow-hidden">
-          <div class="absolute top-0 right-0 bg-emerald-500 text-black text-[9px] font-extrabold px-3 py-0.5 uppercase">Featured</div>
+        <!-- OpenRouter Stable Tier -->
+        <div class="border border-emerald-500/50 bg-black p-5 flex flex-col justify-between shadow-[0_0_25px_rgba(16,185,129,0.15)] relative overflow-hidden">
+          <div class="absolute top-0 right-0 bg-emerald-500 text-black text-[9px] font-extrabold px-3 py-0.5 uppercase">Stable</div>
           <div class="space-y-3">
-            <span class="text-[9px] border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 uppercase font-bold">Atria Provider</span>
-            <h3 class="font-extrabold text-sm text-emerald-300">Atria-Dawn-Preview</h3>
-            <p class="text-[11px] text-zinc-400 leading-relaxed">State-of-the-art flagship reasoning model with massive 100M token quota and ultra-fast inference.</p>
+            <span class="text-[9px] border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 px-2 py-0.5 uppercase font-bold">OpenRouter</span>
+            <h3 class="font-extrabold text-sm text-emerald-300">qwen/qwen3.6-plus:free</h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">Tool-calling agent flagship. 1M context, native function calling, routed by OpenRouter's own failover layer. Recommended for production agent workloads.</p>
+          </div>
+          <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPM</div><div class="text-zinc-300 font-bold">20</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">TOOLS</div><div class="text-emerald-400 font-bold">YES</div></div>
+            <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">CTX</div><div class="text-zinc-300 font-bold">1M</div></div>
+          </div>
+        </div>
+
+        <!-- Atria Dawn -->
+        <div class="border border-zinc-800 bg-black p-5 flex flex-col justify-between hover:border-emerald-500 transition">
+          <div class="space-y-3">
+            <span class="text-[9px] border border-zinc-800 bg-zinc-900 text-zinc-300 px-2 py-0.5 uppercase">Atria Provider</span>
+            <h3 class="font-extrabold text-sm text-zinc-100">Atria-Dawn-Preview</h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed">Flagship reasoning model with massive 100M token quota and ultra-fast inference.</p>
           </div>
           <div class="border-t border-zinc-900 pt-3 mt-4 grid grid-cols-3 gap-2 text-center text-[10px]">
             <div class="bg-zinc-950 p-1.5 border border-zinc-900"><div class="text-zinc-600">RPM</div><div class="text-zinc-300 font-bold">60</div></div>
@@ -186,12 +197,12 @@
       <div class="bg-zinc-950 p-4 border border-zinc-900 font-mono text-xs text-emerald-400 select-all overflow-x-auto">
         https://antigravity-seven-delta.vercel.app/v1
       </div>
-      <p class="text-xs text-zinc-500">Use any OpenAI client library with any dummy API key (<code class="text-emerald-400">antigravity-free</code>). All requests are load-balanced across active free models.</p>
+      <p class="text-xs text-zinc-500">Use any OpenAI client library with any dummy API key (<code class="text-emerald-400">antigravity-free</code>). For agents, point at <code class="text-emerald-400">qwen/qwen3.6-plus:free</code> — it routes straight to OpenRouter.</p>
     </div>
   </main>
 
   <footer class="border-t border-zinc-900 bg-black py-6 text-center text-[10px] text-zinc-700 uppercase tracking-widest mt-auto">
-    ANTIGRAVITY // 200+ FREE MODELS GATEWAY
+    ANTIGRAVITY // FREE MODELS GATEWAY
   </footer>
 
   <script>
@@ -206,6 +217,17 @@
         icon.className = 'fa-solid fa-bars';
       }
     }
+
+    // Replace the "200+" static claims with the live count from the API.
+    fetch('/api/models')
+      .then(r => r.json())
+      .then(j => {
+        const n = j.verified_free_models_count || (j.data && j.data.length) || 0;
+        if (!n) return;
+        const cta = document.getElementById('explore-cta');
+        if (cta) cta.textContent = `Explore ${n} Models`;
+      })
+      .catch(() => { /* keep static text on failure */ });
   </script>
 </body>
 </html>
