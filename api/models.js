@@ -32,6 +32,7 @@ for (let i = 106; i <= 111; i++) {
 const rawOsaiiKey = process.env.Key_112?.trim() || '';
 const rawAtriaKey =
   process.env.Key_113?.trim() || process.env.ATRIA_API_KEY?.trim() || '';
+const rawOpenrouterKey = process.env.OPENROUTER_API_KEY?.trim() || '';
 
 // ------------------------------------------------------------------
 // Model classification
@@ -48,12 +49,33 @@ const IMAGE_MODEL_PATTERN =
 const NON_CHAT_GOOGLE_PATTERN =
   /(^antigravity-|^deep-research|computer-use-preview)/i;
 
+const NON_CHAT_GOOGLE_SUFFIX = /(-image$|-image-|-image-|^gemini-omni-)/i;
+
+const EXTRA_NON_CHAT_IDS = new Set([
+  'nova-3:free',
+  'nova-3',
+  'gemini-3.1-pro-preview-customtools',
+  'gemini-omni-flash-preview',
+  'gemini-omni-1.1-flash',
+  'qwen3-guard-8b',
+  'moondream-3.1',
+  'nemotron-3.5-content-safety-free',
+  'nemotron-3.5-content-safety',
+  'osaii/voicellm',
+  'osaii/faster-experimental',
+  'osaii/ultrafast-experimental',
+  'aura-1:free',
+  'aura-1',
+]);
+
 function isChatModel(id, provider) {
   if (!id) return false;
   const lower = id.toLowerCase();
+  if (EXTRA_NON_CHAT_IDS.has(lower)) return false;
   if (NON_TEXT_KEYWORDS.some(kw => lower.includes(kw))) return false;
   if (IMAGE_MODEL_PATTERN.test(lower)) return false;
   if (provider === 'google' && NON_CHAT_GOOGLE_PATTERN.test(lower)) return false;
+  if (provider === 'google' && NON_CHAT_GOOGLE_SUFFIX.test(lower)) return false;
   return true;
 }
 
@@ -73,7 +95,7 @@ function jsonResponse(obj, status = 200) {
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 's-maxage=60, stale-while-revalidate',
+      'Cache-Control': 's-maxage=210, stale-while-revalidate',
     },
   });
 }
@@ -94,13 +116,14 @@ export default async function handler(req) {
   }
 
   const providerStats = {
-    google:     { configured_keys: rawGeminiKeys.length,     live: false, models_count: 0, status: 'unchecked' },
-    unorouter:  { configured_keys: rawUnorouterKeys.length,  live: false, models_count: 0, status: 'unchecked' },
-    aihubmix:   { configured_keys: rawAihubmixKeys.length,   live: false, models_count: 0, status: 'unchecked' },
-    jankrouter: { configured_keys: 0,                        live: false, models_count: 0, status: 'unchecked' },
-    freeaixyz:  { configured_keys: 0,                        live: false, models_count: 0, status: 'unchecked' },
-    osaii:      { configured_keys: rawOsaiiKey ? 1 : 0,      live: false, models_count: 0, status: 'unchecked' },
-    atria:      { configured_keys: rawAtriaKey ? 1 : 0,      live: false, models_count: 0, status: 'unchecked' },
+    openrouter: { configured_keys: rawOpenrouterKey ? 1 : 0, live: false, models_count: 0, status: 'unchecked' },
+    google:     { configured_keys: rawGeminiKeys.length,    live: false, models_count: 0, status: 'unchecked' },
+    unorouter:  { configured_keys: rawUnorouterKeys.length, live: false, models_count: 0, status: 'unchecked' },
+    aihubmix:   { configured_keys: rawAihubmixKeys.length,  live: false, models_count: 0, status: 'unchecked' },
+    jankrouter: { configured_keys: 0,                       live: false, models_count: 0, status: 'unchecked' },
+    freeaixyz:  { configured_keys: 0,                       live: false, models_count: 0, status: 'unchecked' },
+    osaii:      { configured_keys: rawOsaiiKey ? 1 : 0,     live: false, models_count: 0, status: 'unchecked' },
+    atria:      { configured_keys: rawAtriaKey ? 1 : 0,     live: false, models_count: 0, status: 'unchecked' },
   };
 
   const allFormattedModels = [];
@@ -113,6 +136,49 @@ export default async function handler(req) {
   };
 
   const results = await Promise.all([
+    // ---- OpenRouter ----
+    settleSafe(async () => {
+      if (!rawOpenrouterKey) {
+        providerStats.openrouter.status = 'no_keys_configured';
+        return { models: [], workingKeys: 0 };
+      }
+      const res = await fetchWithTimeout('https://openrouter.ai/api/v1/models', {
+        headers: {
+          Authorization: `Bearer ${rawOpenrouterKey}`,
+          'HTTP-Referer': 'https://antigravity-seven-delta.vercel.app',
+          'X-Title': 'Antigravity Gateway',
+        },
+      }, 4000).catch(() => null);
+      if (!res || !res.ok) {
+        providerStats.openrouter.status = 'unreachable';
+        return { models: [], workingKeys: 0 };
+      }
+      let data;
+      try { data = await res.json(); }
+      catch {
+        providerStats.openrouter.status = 'invalid_json';
+        return { models: [], workingKeys: 0 };
+      }
+      const models = (data.data || [])
+        .filter(m => {
+          const id = (m.id || '').toLowerCase();
+          return /:free$/.test(id) && isChatModel(m.id, 'openrouter');
+        })
+        .map(m => ({
+          id: m.id,
+          provider: 'openrouter',
+          rpm: 20,
+          tpm: m.context_length || 200000,
+          rpd: 1000,
+          limit_type: 'per_day',
+        }));
+      providerStats.openrouter.live = models.length > 0;
+      providerStats.openrouter.status = models.length > 0 ? 'live' : 'empty_catalog';
+      providerStats.openrouter.models_count = models.length;
+      if (models.length > 0) allWorkingKeyIds.add('openrouter');
+      return { models, workingKeys: models.length > 0 ? 1 : 0 };
+    }),
+
     // ---- Google Gemini ----
     settleSafe(async () => {
       let working = 0;
@@ -144,8 +210,8 @@ export default async function handler(req) {
             return {
               id,
               provider: 'google',
-              rpm: 15,                      // per key
-              rpm_aggregate: 15 * working,  // pooled
+              rpm: 15,
+              rpm_aggregate: 15 * working,
               tpm: m.inputTokenLimit || 250000,
               rpd: 1500,
               limit_type: 'per_minute',
@@ -397,7 +463,6 @@ export default async function handler(req) {
     }
   }
 
-  // Deduplicate by (provider, id)
   const seen = new Set();
   const deduped = [];
   for (const m of allFormattedModels) {
